@@ -1,0 +1,621 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Analiza wariancji wzorem</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: 1600×900 lecture stage on black, the original deck's identity (heavy grotesk titles, typewriter text, hand-written numbers, red/green/blue groups) turned into step-by-step builds. */
+:root{
+  --paper:#FCFCFA; --soft:#F1F0EA; --line:#D8D8D2;
+  --ink:#111111; --body:#2B2B2B; --muted:#66665F; --frame:#000000;
+  --m:#D7322B; --s:#2B8A3E; --d:#1C64C8; --mark:#D6146F;
+  --display:'Rubik', 'Arial Black', Arial, sans-serif;
+  --text:'Courier Prime', 'Courier New', monospace;
+  --hand:'Patrick Hand', 'Comic Sans MS', cursive;
+  color-scheme: light;
+}
+html,body{height:100%}
+body{background:var(--frame);color:var(--ink);font-family:var(--text);overflow:hidden}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--mark);outline-offset:3px}
+
+.viewport{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:calc(52px + env(safe-area-inset-bottom,0px));overflow:hidden}
+body.notes-open .viewport{bottom:calc(52px + 170px + env(safe-area-inset-bottom,0px))}
+.stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center;background:var(--paper);overflow:hidden}
+.slide{position:absolute;inset:0;padding:60px 88px 56px;display:none;flex-direction:column;gap:28px;background:var(--paper)}
+.slide.active{display:flex}
+.notes{display:none}
+
+h1,h2{margin:0;font-family:var(--display);font-weight:900;letter-spacing:-.03em;line-height:.95;text-wrap:balance}
+h1{font-size:150px}
+h2{font-size:76px}
+h2 small{font-size:.8em}
+p{margin:0}
+.txt{font-size:27px;line-height:1.45;color:var(--body);max-width:34em}
+.txt.sm{font-size:23px}
+.hl{color:var(--mark);font-weight:700}
+.hand{font-family:var(--hand)}
+.row{display:flex;gap:48px;align-items:flex-start;flex:1;min-height:0}
+.colflex{display:flex;flex-direction:column;gap:22px;min-width:0}
+[data-show]{opacity:0;visibility:hidden;transition:opacity .45s, visibility .45s}
+[data-show].shown{opacity:1;visibility:visible}
+@media (prefers-reduced-motion:reduce){[data-show],.cloud .n,.cloud .colhead,.bar-seg{transition:none!important}}
+
+/* buttons */
+.ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.b{border:2px solid var(--ink);background:var(--paper);padding:8px 18px;font-family:var(--text);font-size:20px;font-weight:700;cursor:pointer}
+.b:hover{background:var(--ink);color:var(--paper)}
+.b.pri{background:var(--ink);color:var(--paper)}
+.b.pri:hover{background:var(--mark);border-color:var(--mark)}
+.kbd{font-size:16px;color:var(--muted)}
+
+/* title */
+.title{justify-content:center;align-items:center;text-align:center;gap:40px}
+.title .who{font-size:34px}
+.title .kbd{position:absolute;bottom:40px;left:0;right:0}
+
+/* number cloud */
+.cloud{position:relative;width:720px;height:560px;border:7px solid #0E2633;flex:none;background:var(--paper)}
+.cloud .n{position:absolute;font-family:var(--hand);font-size:68px;line-height:1;transform:translate(-50%,-50%);transition:left .9s cubic-bezier(.6,.05,.3,1), top .9s cubic-bezier(.6,.05,.3,1), color .5s;color:var(--ink)}
+.cloud.color .n.g0,.cloud.group .n.g0{color:var(--m)}
+.cloud.color .n.g1,.cloud.group .n.g1{color:var(--s)}
+.cloud.color .n.g2,.cloud.group .n.g2{color:var(--d)}
+.cloud .colhead{position:absolute;top:36px;width:190px;transform:translateX(-50%);color:#fff;font-family:var(--display);font-weight:700;font-size:24px;padding:8px 10px;text-align:center;opacity:0;transition:opacity .5s .5s}
+.cloud.group .colhead{opacity:1}
+.cloud .mbadge{position:absolute;right:18px;bottom:14px;font-family:var(--hand);font-size:40px;color:var(--mark)}
+.legend{display:flex;flex-direction:column;gap:10px;font-size:26px}
+.legend b{font-weight:700}
+
+/* colored column tables */
+.ctabs{display:flex;gap:56px;justify-content:center}
+.ctab{width:220px;display:flex;flex-direction:column}
+.ctab .ch{background:var(--g);color:#fff;font-family:var(--display);font-weight:700;font-size:24px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.45)}
+.ctab .cv{background:var(--g);color:#fff;font-family:var(--hand);font-size:38px;line-height:1;text-align:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.45)}
+.mean-card{border:3px solid var(--ink);border-radius:4px 10px 6px 12px/10px 4px 12px 6px;padding:14px 16px;font-size:22px;line-height:1.35;background:var(--paper)}
+.mean-card b{font-family:var(--hand);font-size:34px;color:var(--g)}
+
+/* charts + chips */
+.chart{width:820px;height:560px;flex:none}
+.chart text{font-family:var(--text)}
+.side{display:flex;flex-direction:column;gap:18px;flex:1;min-width:0}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.chip{border:2px solid var(--line);border-left:7px solid var(--gc,var(--ink));padding:5px 8px;font-family:var(--hand);font-size:23px;line-height:1.1;white-space:nowrap;color:var(--muted);background:var(--paper)}
+.chip.on{color:var(--ink);border-color:var(--ink);border-left-color:var(--gc,var(--ink))}
+.chip.cur{border-color:var(--mark);border-left-color:var(--mark);background:#FCE7F1}
+.sum{font-family:var(--hand);font-size:44px;line-height:1.1}
+.sum b{color:var(--mark)}
+
+/* decomposition */
+.decomp{display:flex;flex-direction:column;gap:14px;width:100%}
+.bar-row{display:flex;height:96px;width:100%}
+.bar-seg{display:flex;align-items:center;padding:0 22px;color:#fff;font-family:var(--display);font-weight:700;font-size:28px;white-space:nowrap;overflow:hidden;transition:width 1s cubic-bezier(.6,.05,.3,1)}
+.eq{font-family:var(--hand);font-size:120px;line-height:1;text-align:center}
+
+/* definitions */
+.defs{display:flex;flex-direction:column;gap:22px}
+.def{display:grid;grid-template-columns:330px 1fr;gap:28px;align-items:baseline;border-top:3px solid var(--ink);padding-top:16px}
+.def h3{margin:0;font-family:var(--display);font-weight:900;font-size:32px;letter-spacing:-.02em}
+.def p{font-size:24px;line-height:1.4;color:var(--body)}
+
+/* df calculator */
+.dfcalc{display:flex;gap:40px;align-items:stretch}
+.dfbox{border:3px solid var(--ink);padding:22px 26px;display:flex;flex-direction:column;gap:10px;min-width:330px}
+.dfbox label{font-size:20px;color:var(--muted)}
+.dfbox input{width:120px;font-family:var(--hand);font-size:44px;border:0;border-bottom:3px solid var(--ink);background:transparent;padding:0}
+.dfres{font-family:var(--hand);font-size:42px;line-height:1.15}
+.dfres b{color:var(--mark)}
+
+/* F */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 14px}
+.frac span{padding:0 10px}
+.frac span:first-child{border-bottom:3px solid var(--ink)}
+.fbig{font-family:var(--hand);font-size:72px;line-height:1.1;display:flex;align-items:center;justify-content:center}
+.fbig.word{font-family:var(--text);font-style:italic;font-size:34px}
+
+/* lab */
+.lab{display:grid;grid-template-columns:470px 1fr;gap:44px;flex:1;min-height:0}
+.lab-in{display:flex;flex-direction:column;gap:16px}
+.lab-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.lab-col{display:flex;flex-direction:column;gap:6px}
+.lab-col .ch{background:var(--g);color:#fff;font-family:var(--display);font-weight:700;font-size:17px;padding:6px 8px}
+.lab-col input{width:100%;font-family:var(--hand);font-size:30px;text-align:center;border:2px solid var(--g);background:var(--paper);padding:2px 4px}
+.lab-col .gm{font-family:var(--hand);font-size:24px;color:var(--g);text-align:center}
+.lab-out{display:flex;flex-direction:column;gap:18px;min-width:0}
+.verdict{font-size:23px;line-height:1.4;border-left:6px solid var(--mark);padding:6px 0 6px 16px}
+.lab-row{display:flex;gap:28px;align-items:flex-start}
+.lab-chart{width:560px;height:330px;flex:none}
+
+/* SPSS table */
+.spss{border-collapse:collapse;font-family:Arial, Helvetica, sans-serif;font-size:24px;color:#1F1F1F}
+.spss caption{font-weight:700;font-size:26px;padding-bottom:8px}
+.spss th{font-weight:400;color:#264A60;padding:8px 18px;text-align:right;border-bottom:2px solid #264A60;vertical-align:bottom}
+.spss th:first-child{text-align:left}
+.spss td{padding:8px 18px;text-align:right;border-bottom:1px solid #C9C9C9;font-variant-numeric:tabular-nums}
+.spss td:first-child{text-align:left;background:#E0E0E0;color:#264A60}
+.spss .dfc{background:#FCE7F1}
+
+/* checklist */
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px;font-size:26px;line-height:1.4}
+.checks li{padding-left:44px;position:relative}
+.checks li::before{content:"✓";position:absolute;left:0;top:-2px;font-size:32px;color:var(--mark);font-weight:700}
+
+/* quiz */
+.quiz{display:flex;flex-direction:column;gap:26px}
+.q{border-top:3px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.q p.qq{font-size:26px;font-weight:700}
+.q .opts{display:flex;gap:12px;flex-wrap:wrap}
+.q .fb{font-size:21px;min-height:1.4em;color:var(--body)}
+.q button.ok{background:var(--s);border-color:var(--s);color:#fff}
+.q button.no{background:var(--m);border-color:var(--m);color:#fff}
+
+/* bar */
+.bar{position:fixed;left:0;right:0;bottom:0;height:calc(52px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--frame);color:#F2F2EE;display:flex;align-items:center;gap:8px;font-size:13px;z-index:5}
+.bar button{background:#262626;border:0;height:34px;min-width:34px;padding:0 12px;cursor:pointer;color:#F2F2EE}
+.bar button:hover{background:#3A3A38}
+.bar button[aria-pressed="true"]{background:var(--mark)}
+.bar .count{min-width:62px;text-align:center;font-variant-numeric:tabular-nums}
+.bar .sec{color:#A3A39C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.progress{position:absolute;left:0;top:0;height:2px;background:var(--mark);transition:width .3s}
+.notes-panel{position:fixed;left:0;right:0;bottom:calc(52px + env(safe-area-inset-bottom,0px));height:170px;background:#1A1A1A;color:#D6D6D0;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow:auto;font-size:16px;line-height:1.55;z-index:4;border-top:1px solid #333}
+.notes-panel b{color:#fff;display:block;margin-bottom:4px;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+@media (max-width:560px){.bar .sec,.bar .lbl{display:none}}
+</style>
+
+<div class="viewport" id="viewport">
+<div class="stage" id="stage">
+
+<section class="slide title" id="t0" data-sec="Start">
+  <h1>Analiza wariancji<br>wzorem</h1>
+  <p class="who">mgr Michał Zięba</p>
+  <p class="kbd">→ następny krok · ← poprzedni · N notatki · F pełny ekran</p>
+  <div class="notes">Strzałka w prawo odsłania kolejne kroki na slajdzie, a gdy wszystkie są odsłonięte – przechodzi dalej. Na slajdach z obliczeniami są też przyciski „Wszystkie” i „Od nowa”.</div>
+</section>
+
+<section class="slide" id="p1" data-sec="Część 1 · dane">
+  <h2>Część 1</h2>
+  <div class="row" style="align-items:center">
+    <div class="colflex" style="flex:1">
+      <p class="txt">Pewien badacz zebrał wyniki ekstrawersji od 15 osób. Badacza zainteresowało, w jaki sposób można wyjaśnić, dlaczego osoby badane uzyskały w teście takie wyniki…</p>
+      <p class="txt hl" data-show="1">Pierwszy pomysł: przewidywać każdemu wynik średnią ogólną. M = (9 + 10 + … + 3) / 15 = 105 / 15 = 7</p>
+    </div>
+    <div class="cloud" id="cloud1"><span class="mbadge" data-show="1">M = 7</span></div>
+  </div>
+  <div class="notes">Zapytaj salę: czym moglibyśmy wyjaśnić, że ktoś ma 2, a ktoś 13? Najprostszy model to średnia – każdemu przewidujemy 7.</div>
+</section>
+
+<section class="slide" id="p2" data-sec="Część 2 · SS ogółem">
+  <h2>Część 2 – SS<small>ogółem</small></h2>
+  <div class="row">
+    <svg class="chart" id="ch2" viewBox="0 0 820 560" role="img" aria-label="Wyniki 15 osób, średnia ogólna 7 i odchylenia od średniej"></svg>
+    <div class="side">
+      <p class="txt sm">Średnia dla wszystkich osób wynosi 7. Liczymy, jak bardzo średnia myli się w przewidywaniu wyników: każde odchylenie podnosimy do kwadratu – dosłownie rysujemy kwadrat.</p>
+      <div class="chips" id="cp2"></div>
+      <p class="sum" id="sum2"></p>
+      <div class="ctrl"><button class="b pri" data-act="next" type="button">Następny ▸</button><button class="b" data-act="all" type="button">Wszystkie</button><button class="b" data-act="reset" type="button">Od nowa</button></div>
+    </div>
+  </div>
+  <div class="notes">Każde kliknięcie (lub →) dodaje jedną osobę: odchylenie od średniej, jego kwadrat jako różowy kwadrat na wykresie i wkład do sumy. Im suma kwadratów mniejsza, tym wyniki bliżej średniej. Wynik: 178.</div>
+</section>
+
+<section class="slide" id="p3" data-sec="Część 3 · grupy">
+  <h2>Część 3</h2>
+  <div class="row" style="align-items:center">
+    <div class="colflex" style="flex:1">
+      <p class="txt sm">Suma kwadratów od średniej wyniosła 178. Badacz zaczął się zastanawiać, czy jest inna możliwość wyjaśnienia wyników. Sprawdził, czy istnieje inna zmienna, która na nie wpływa – z jakiego miasta pochodzą osoby badane.</p>
+      <div class="legend" data-show="1">
+        <p>Kolor <b style="color:var(--m)">czerwony</b> – małe miasto</p>
+        <p>Kolor <b style="color:var(--s)">zielony</b> – średnie miasto</p>
+        <p>Kolor <b style="color:var(--d)">niebieski</b> – duże miasto</p>
+      </div>
+    </div>
+    <div class="cloud" id="cloud3"></div>
+  </div>
+  <div class="notes">Zanim pokolorujesz (→), zapytaj: czy widzicie jakiś wzór? Po pokolorowaniu wzór jest oczywisty.</div>
+</section>
+
+<section class="slide" id="p4" data-sec="Część 4 · grupowanie">
+  <h2>Część 4</h2>
+  <div class="row" style="align-items:center">
+    <div class="cloud" id="cloud4"></div>
+    <div class="colflex" style="flex:1">
+      <p class="txt">Badacz pogrupował wyniki. Okazało się, że:</p>
+      <p class="txt sm" data-show="1"><b style="color:var(--m)">Małe miasto</b> – wyniki najniższe<br><b style="color:var(--s)">Średnie miasto</b> – wyniki średnie<br><b style="color:var(--d)">Duże miasto</b> – wyniki najwyższe</p>
+      <p class="txt sm" data-show="1">Grupy (zmienna niezależna) dobrze różnicują wyniki ekstrawersji (zmienna zależna)! Ciągle jednak nie wiemy, czy grupy wyjaśniają wyniki <span class="hl">lepiej niż ogólna średnia</span>. W tym celu obliczymy sumę kwadratów wewnątrzgrupową.</p>
+    </div>
+  </div>
+  <div class="notes">→ przesuwa liczby do kolumn. Dobry moment, by nazwać zmienną niezależną (wielkość miasta) i zależną (ekstrawersja).</div>
+</section>
+
+<section class="slide" id="p5" data-sec="Część 5 · średnie grup">
+  <h2>Część 5</h2>
+  <div class="ctabs" id="tabs5"></div>
+  <div class="ctabs">
+    <div class="mean-card" style="--g:var(--m);width:420px" data-show="1">Średnia dla małego miasta:<br>(3 + 3 + 4 + 2 + 3) / 5 = <b>3</b></div>
+    <div class="mean-card" style="--g:var(--s);width:420px" data-show="2">Średnia dla średniego miasta:<br>(9 + 8 + 6 + 7 + 5) / 5 = <b>7</b></div>
+    <div class="mean-card" style="--g:var(--d);width:420px" data-show="3">Średnia dla dużego miasta:<br>(10 + 11 + 13 + 10 + 11) / 5 = <b>11</b></div>
+  </div>
+  <div class="notes">Każde → odsłania średnią jednej grupy. Teraz każdej osobie przewidujemy średnią jej grupy zamiast 7.</div>
+</section>
+
+<section class="slide" id="p6" data-sec="Część 6 · SS wewnątrzgrupowa">
+  <h2>Część 6 – SS<small>wewnątrzgrupowa</small></h2>
+  <div class="row">
+    <svg class="chart" id="ch6" viewBox="0 0 820 560" role="img" aria-label="Wyniki w grupach, średnie grup i odchylenia od nich"></svg>
+    <div class="side">
+      <p class="txt sm">Teraz mierzymy odległość każdego wyniku od średniej <b>jego grupy</b>.</p>
+      <div class="chips" id="cp6"></div>
+      <p class="sum" id="sum6"></p>
+      <p class="txt sm" id="cmp6" style="visibility:hidden">Suma kwadratów po zastosowaniu grup zmniejszyła się w porównaniu do ogólnej średniej! <span class="hl">18 &lt; 178</span></p>
+      <div class="ctrl"><button class="b pri" data-act="next" type="button">Następny ▸</button><button class="b" data-act="all" type="button">Wszystkie</button><button class="b" data-act="reset" type="button">Od nowa</button></div>
+    </div>
+  </div>
+  <div class="notes">Kwadraty są teraz dużo mniejsze niż w części 2 – to jest cała idea: średnie grup przewidują wyniki o wiele lepiej niż średnia ogólna.</div>
+</section>
+
+<section class="slide" id="p7" data-sec="Część 7 · wariancja błędu">
+  <h2>Część 7</h2>
+  <div class="row">
+    <svg class="chart" id="ch7" viewBox="0 0 820 560" role="img" aria-label="Zmienność wyników wewnątrz grup"></svg>
+    <div class="side" style="justify-content:center">
+      <p class="txt sm">W małym mieście osoby miały najniższe wyniki, w średnim przeciętne, a w dużym wysokie. Mimo to wyniki w grupach ciągle różnią się między sobą (różowe odcinki).</p>
+      <p class="txt sm">To zróżnicowanie jest najpewniej spowodowane innymi zmiennymi, których nie uwzględniliśmy w badaniu (np. płcią albo wykształceniem). Nazywamy je <span class="hl">wariancją błędu</span> lub <span class="hl">wariancją wewnątrzgrupową</span>.</p>
+      <p class="txt sm">Jest to zmienność wyników, której <span class="hl">nie byliśmy w stanie wyjaśnić</span> naszą zmienną niezależną (wielkością miasta).</p>
+    </div>
+  </div>
+  <div class="notes">Zapytaj: co jeszcze mogłoby wpływać na ekstrawersję? Każda odpowiedź to kandydat na „resztę”, której model nie wyjaśnia.</div>
+</section>
+
+<section class="slide" id="p8" data-sec="Część 8 · rozkład sumy kwadratów">
+  <h2>Część 8</h2>
+  <p class="txt">Okazuje się, że sumy kwadratów można przedstawić następująco:</p>
+  <p class="txt" style="font-weight:700;color:var(--ink)">SS ogółem = SS międzygrupowa + SS wewnątrzgrupowa</p>
+  <div class="decomp">
+    <div class="bar-row"><div class="bar-seg" style="width:100%;background:var(--ink)">SS ogółem = 178</div></div>
+    <div class="bar-row" id="split8"><div class="bar-seg" id="b8a" style="width:100%;background:#4A4A46">SS międzygrupowa = 160</div><div class="bar-seg" id="b8b" style="width:0;background:var(--mark)">18</div></div>
+  </div>
+  <p class="eq" data-show="1">178 = 160 + 18</p>
+  <p class="txt sm" data-show="1">Znając SS ogółem i SS wewnątrzgrupową łatwo stwierdzić, że SS międzygrupowa wynosi 160. Mówi ona, jak bardzo wyróżnione na podstawie wielkości miasta grupy różnią się wynikami. Możemy ją też policzyć wzorem: odejmujemy ogólną średnią od średniej grupy i podnosimy wynik do kwadratu.</p>
+  <div class="notes">→ dzieli pasek: z 178 jednostek zmienności 160 „zabrała” wielkość miasta, 18 zostało niewyjaśnione.</div>
+</section>
+
+<section class="slide" id="p9" data-sec="Część 9 · SS międzygrupowa">
+  <h2>Część 9 – SS<small>międzygrupowa</small></h2>
+  <div class="row">
+    <svg class="chart" id="ch9" viewBox="0 0 820 560" role="img" aria-label="Odległości średnich grup od średniej ogólnej"></svg>
+    <div class="side">
+      <p class="txt sm">Każda osoba „dostaje” średnią swojej grupy. Mierzymy, jak daleko ta średnia leży od średniej ogólnej (7).</p>
+      <div class="chips" id="cp9"></div>
+      <p class="sum" id="sum9"></p>
+      <div class="ctrl"><button class="b pri" data-act="next" type="button">Następny ▸</button><button class="b" data-act="all" type="button">Wszystkie</button><button class="b" data-act="reset" type="button">Od nowa</button></div>
+    </div>
+  </div>
+  <div class="notes">W średnim mieście średnia grupy to 7 – tyle samo co ogólna – więc te osoby nic nie dodają (kwadraty zerowe). Wynik 160 zgadza się z wnioskiem z części 8.</div>
+</section>
+
+<section class="slide" id="s1" data-sec="Podsumowanie sum kwadratów">
+  <h2>Podsumowanie</h2>
+  <div class="defs">
+    <div class="def" data-show="1"><h3>SS ogółem</h3><p>suma kwadratów różnic między wynikami a ogólną średnią – jak daleko wyniki osób badanych są od ogólnej średniej</p></div>
+    <div class="def" data-show="2"><h3>SS wewnątrzgrupowa</h3><p>suma kwadratów różnic między wynikami a średnimi dla grup – jak daleko wyniki są od średnich grup, do których należą</p></div>
+    <div class="def" data-show="3"><h3>SS międzygrupowa</h3><p>suma kwadratów różnic między średnimi grup a ogólną średnią – jak bardzo średnie grup różnią się między sobą. Im większa, tym większe różnice między grupami.</p></div>
+  </div>
+  <div class="notes">Trzy definicje, odsłaniane po kolei. Dobry moment na pytania przed przejściem do statystyki F.</div>
+</section>
+
+<section class="slide" id="f0" data-sec="Statystyka F">
+  <h2>Statystyka F</h2>
+  <p class="txt">Znając sumy kwadratów, możemy obliczyć statystykę F. Podsumowuje ona wartości z badania i pomaga ocenić istotność modelu.</p>
+  <p class="txt" data-show="1">Przedtem jednak musimy zdać sobie sprawę, że suma kwadratów zależy od wielkości grup. <span class="hl">Im więcej osób badanych, tym większa suma kwadratów.</span> Dlatego używamy średniego kwadratu, który bierze poprawkę na wielkość badanej grupy i liczbę grup.</p>
+  <div class="notes">Intuicja: gdybyśmy zbadali 150 osób zamiast 15, SS byłaby ok. 10 razy większa, choć zjawisko to samo. Dzielenie przez stopnie swobody to naprawia.</div>
+</section>
+
+<section class="slide" id="df" data-sec="Średnie kwadraty i stopnie swobody">
+  <h2>Średnie kwadraty i stopnie swobody</h2>
+  <p class="txt">Sumy kwadratów dzielimy przez stopnie swobody (df). Zmień liczby i sprawdź:</p>
+  <div class="dfcalc">
+    <div class="dfbox"><label for="dfk">liczba grup (k)</label><input id="dfk" type="number" min="2" max="20" value="3"><label for="dfn">liczba badanych (N)</label><input id="dfn" type="number" min="3" max="500" value="15"></div>
+    <div class="dfbox" style="flex:1">
+      <p class="dfres">df międzygrupowe = <u>liczba grup − 1</u> = <span id="dfb1"></span></p>
+      <p class="dfres">df wewnątrzgrupowe = <u>liczba badanych − liczba grup</u> = <span id="dfw1"></span></p>
+      <p class="txt sm" id="dfnote"></p>
+    </div>
+  </div>
+  <div class="notes">Domyślnie: 3 grupy i 15 osób, więc df = 2 oraz 12. Można poprosić salę o policzenie df dla innego układu, np. 4 grupy po 10 osób.</div>
+</section>
+
+<section class="slide" id="p10" data-sec="Część 10 · średnie kwadraty">
+  <h2>Część 10</h2>
+  <p class="txt">Nasze obliczone sumy kwadratów to:<br>SS międzygrupowa = 160<br>SS wewnątrzgrupowa = 18</p>
+  <p class="fbig" data-show="1">MS<sub style="font-size:.45em">międzygrupowy</sub>&nbsp;= 160 / 2 = <span class="hl">&nbsp;80</span></p>
+  <p class="fbig" data-show="2">MS<sub style="font-size:.45em">wewnątrzgrupowy</sub>&nbsp;= 18 / 12 = <span class="hl">&nbsp;1,50</span></p>
+  <div class="notes">MS (mean square) to średni kwadrat. Dwa kroki: najpierw między grupami, potem wewnątrz grup.</div>
+</section>
+
+<section class="slide" id="p11" data-sec="Część 11 · statystyka F">
+  <h2>Część 11</h2>
+  <p class="txt">Mając te wyniki, obliczamy statystykę F:</p>
+  <p class="fbig word">F =<span class="frac"><span>średni kwadrat między grupami</span><span>średni kwadrat wewnątrz grup</span></span></p>
+  <p class="fbig" data-show="1">F =<span class="frac"><span>80</span><span>1,50</span></span>= <span class="hl">&nbsp;53,33</span></p>
+  <div data-show="2" style="display:flex;gap:40px;align-items:center">
+    <svg id="fcurve" viewBox="0 0 760 230" style="width:760px;height:230px" role="img" aria-label="Rozkład F(2, 12) z wartością krytyczną i uzyskanym F"></svg>
+    <p class="txt sm" style="max-width:15em">Gdyby wielkość miasta nie miała znaczenia, F rzadko przekraczałoby <span id="fcrit"></span>. Nasze F = 53,33 leży daleko poza wykresem.</p>
+  </div>
+  <div class="notes">Krok 2 pokazuje rozkład F przy 2 i 12 stopniach swobody (gdy hipoteza zerowa jest prawdziwa). Różowe pole to 5% najbardziej skrajnych wartości. Nasze F jest daleko dalej – stąd p &lt; 0,001.</div>
+</section>
+
+<section class="slide" id="lab" data-sec="Laboratorium F">
+  <h2>Laboratorium: zmień dane</h2>
+  <div class="lab">
+    <div class="lab-in">
+      <div class="lab-cols" id="labcols"></div>
+      <div class="ctrl"><button class="b" type="button" data-preset="orig">Dane z badania</button><button class="b" type="button" data-preset="same">Te same średnie grup</button><button class="b" type="button" data-preset="spread">Duży rozrzut w grupach</button><button class="b" type="button" data-preset="rand">Losuj</button></div>
+    </div>
+    <div class="lab-out">
+      <table class="spss" id="labtab"></table>
+      <div class="lab-row">
+        <svg class="lab-chart" id="labchart" viewBox="0 0 820 480" role="img" aria-label="Wyniki z laboratorium z średnimi grup"></svg>
+        <div class="colflex" style="flex:1"><div class="decomp"><div class="bar-row" style="height:56px"><div class="bar-seg" id="labB" style="background:#4A4A46;font-size:18px;padding:0 10px">SSB</div><div class="bar-seg" id="labW" style="background:var(--mark);font-size:18px;padding:0 10px">SSW</div></div></div><p class="verdict" id="labv"></p></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">Interaktywna część: wpisuj wyniki (0–20) albo użyj przycisków. „Te same średnie grup” – F spada do zera. „Duży rozrzut w grupach” – średnie jak w badaniu, ale większe SS wewnątrzgrupowe, więc F maleje. Zapytaj przed kliknięciem, co się stanie.</div>
+</section>
+
+<section class="slide" id="s2" data-sec="Podsumowanie">
+  <h2>Podsumowanie</h2>
+  <ul class="checks">
+    <li data-show="1">Analiza wariancji bazuje na sumach kwadratów.</li>
+    <li data-show="2">Za ich pomocą obliczamy statystykę F, służącą do oceny istotności modelu.</li>
+    <li data-show="3">Im statystyka F jest większa, tym większe szanse, że będzie istotna – a tym samym nasz model analizy wariancji będzie istotny statystycznie.</li>
+    <li data-show="4">Statystyka F jest tym większa, im lepiej średnie dla grup wyjaśniają zmienność wyników niż ogólna średnia (średnie grup są znacząco bliżej wyników niż ogólna średnia).</li>
+    <li data-show="5">Gdy suma kwadratów wewnątrzgrupowa maleje, statystyka F rośnie – bo SS wewnątrzgrupowa znajduje się w mianowniku wzoru na F.</li>
+  </ul>
+  <div class="notes">Ostatni punkt możesz pokazać na żywo w laboratorium (przycisk „Duży rozrzut w grupach”).</div>
+</section>
+
+<section class="slide" id="spssS" data-sec="Podsumowanie · SPSS">
+  <h2>Podsumowanie</h2>
+  <div style="position:relative;display:flex;gap:40px;align-items:flex-start">
+    <table class="spss">
+      <caption>Jednoczynnikowa ANOVA<br><span style="font-weight:400;font-size:20px">ekstrawersja</span></caption>
+      <tr><th></th><th>Suma kwadratów</th><th class="dfc">df</th><th>Średni kwadrat</th><th>F</th><th>Istotność</th></tr>
+      <tr><td>Między grupami</td><td>160,000</td><td class="dfc">2</td><td>80,000</td><td>53,333</td><td>&lt;,001</td></tr>
+      <tr><td>Wewnątrz grup</td><td>18,000</td><td class="dfc">12</td><td>1,500</td><td></td><td></td></tr>
+      <tr><td>Ogółem</td><td>178,000</td><td class="dfc">14</td><td></td><td></td><td></td></tr>
+    </table>
+    <p class="txt sm" style="max-width:12em;margin-top:40px"><span class="hl">df</span> = degrees of freedom<br>stopnie swobody</p>
+  </div>
+  <p class="txt">Całe szczęście obliczenia wykona dla nas program do analiz statystycznych. W tabeli mamy dokładnie te same wyniki, które obliczyliśmy wcześniej wzorem (analiza wykonana w SPSS) ☺</p>
+  <div class="notes">Zwróć uwagę na wiersz „Ogółem”: 178 = 160 + 18 oraz 14 = 2 + 12. Stopnie swobody też się sumują.</div>
+</section>
+
+<section class="slide" id="quiz" data-sec="Sprawdź się">
+  <h2>Sprawdź się</h2>
+  <div class="quiz" id="quizbox"></div>
+  <div class="notes">Trzy szybkie pytania na koniec. Kliknij odpowiedź, którą wskaże sala.</div>
+</section>
+
+</div>
+</div>
+
+<div class="notes-panel" id="notesPanel" hidden><b>Notatki prowadzącego</b><div id="notesText"></div></div>
+
+<nav class="bar" aria-label="Sterowanie prezentacją">
+  <div class="progress" id="progress"></div>
+  <button id="prev" type="button" aria-label="Wstecz">←</button>
+  <span class="count" id="count">1 / 1</span>
+  <button id="next" type="button" aria-label="Dalej">→</button>
+  <span class="sec" id="sec"></span>
+  <button id="notesBtn" type="button" aria-pressed="false">N <span class="lbl">Notatki</span></button>
+  <button id="fsBtn" type="button">F <span class="lbl">Pełny ekran</span></button>
+</nav>
+
+<script>
+(function(){
+/* ---------- data ---------- */
+const G=[{name:'Małe miasto',hex:'#D7322B',v:[3,3,4,2,3]},{name:'Średnie miasto',hex:'#2B8A3E',v:[9,8,6,7,5]},{name:'Duże miasto',hex:'#1C64C8',v:[10,11,13,10,11]}];
+const CLOUD=[{v:9,g:1,i:0,x:.22,y:.15},{v:10,g:2,i:0,x:.56,y:.17},{v:10,g:2,i:3,x:.80,y:.17},{v:8,g:1,i:1,x:.16,y:.33},{v:7,g:1,i:3,x:.37,y:.35},{v:11,g:2,i:1,x:.64,y:.37},{v:11,g:2,i:4,x:.86,y:.47},{v:6,g:1,i:2,x:.17,y:.53},{v:5,g:1,i:4,x:.37,y:.51},{v:13,g:2,i:2,x:.60,y:.59},{v:3,g:0,i:0,x:.19,y:.72},{v:4,g:0,i:2,x:.38,y:.70},{v:3,g:0,i:1,x:.30,y:.88},{v:2,g:0,i:3,x:.52,y:.87},{v:3,g:0,i:4,x:.71,y:.88}];
+const ORDER_TOTAL=[[9,1],[8,1],[6,1],[3,0],[3,0],[7,1],[5,1],[4,0],[2,0],[10,2],[11,2],[13,2],[10,2],[11,2],[3,0]].map(([v,g])=>({v,g}));
+const byGroup=gs=>gs.flatMap((g,gi)=>g.v.map(v=>({v,g:gi})));
+const fmt=(n,d)=>Number(n).toFixed(d).replace('.',',');
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const NS='http://www.w3.org/2000/svg';
+
+/* ---------- number cloud ---------- */
+function buildCloud(el){
+  const W=720,H=560,colX=[140,360,580];
+  G.forEach((g,gi)=>{const h=document.createElement('div');h.className='colhead';h.style.left=colX[gi]+'px';h.style.background=g.hex;h.textContent=g.name;el.appendChild(h)});
+  const ns=CLOUD.map(c=>{const s=document.createElement('span');s.className='n g'+c.g;s.textContent=c.v;el.appendChild(s);return s});
+  el._set=state=>{
+    el.classList.toggle('color',state!=='plain'); el.classList.toggle('group',state==='group');
+    CLOUD.forEach((c,k)=>{
+      const g=state==='group';
+      ns[k].style.left=(g?colX[c.g]:c.x*W)+'px';
+      ns[k].style.top=(g?150+c.i*80:c.y*H)+'px';
+    });
+  };
+  el._set('plain');
+}
+['cloud1','cloud3','cloud4'].forEach(id=>buildCloud(document.getElementById(id)));
+document.getElementById('cloud4')._set('color');
+
+/* ---------- colored tables ---------- */
+document.getElementById('tabs5').innerHTML=G.map(g=>'<div class="ctab" style="--g:'+g.hex+';width:420px"><div class="ch">'+g.name+'</div>'+g.v.map(v=>'<div class="cv">'+v+'</div>').join('')+'</div>').join('');
+
+/* ---------- chart ---------- */
+function chart(svg,o){
+  const W=820,H=o.H||560,vmax=o.vmax||14,top=34,bot=H-40,yU=(bot-top)/vmax;
+  const y=v=>bot-v*yU, P=o.persons, n=P.length, gaps=o.groups;
+  const xs=[];let x=92;
+  P.forEach((p,k)=>{ if(gaps&&k>0&&P[k-1].g!==p.g)x+=34; xs.push(x); x+=gaps?42:46; });
+  const gm=[0,1,2].map(gi=>{const a=P.filter(p=>p.g===gi).map(p=>p.v);return a.length?mean(a):0});
+  const GM=mean(P.map(p=>p.v));
+  let s='';
+  for(let v=0;v<=vmax;v+=2){s+='<line x1="56" x2="'+(W-8)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#E6E5DE" stroke-width="1"/><text x="44" y="'+(y(v)+6)+'" text-anchor="end" font-size="17" fill="#66665F">'+v+'</text>'}
+  if(gaps){[0,1,2].forEach(gi=>{const ks=P.map((p,k)=>p.g===gi?k:-1).filter(k=>k>=0); if(!ks.length)return; const x1=xs[ks[0]]-18,x2=xs[ks[ks.length-1]]+18;
+    s+='<line x1="'+x1+'" x2="'+x2+'" y1="'+y(gm[gi])+'" y2="'+y(gm[gi])+'" stroke="'+G[gi].hex+'" stroke-width="5"/><text x="'+((x1+x2)/2)+'" y="'+(H-12)+'" text-anchor="middle" font-size="17" fill="'+G[gi].hex+'" font-weight="700">'+G[gi].name+'</text>';
+    s+='<text x="'+x1+'" y="'+(y(gm[gi])-10)+'" font-size="24" fill="'+G[gi].hex+'" style="font-family:Patrick Hand,cursive">M='+fmt(gm[gi],gm[gi]%1?1:0)+'</text>';});}
+  const gmFaint=o.mode==='within';
+  s+='<line x1="56" x2="'+(W-8)+'" y1="'+y(GM)+'" y2="'+y(GM)+'" stroke="#111" stroke-width="2.5" stroke-dasharray="10 7" opacity="'+(gmFaint?.3:1)+'"/>';
+  s+='<text x="'+(W-10)+'" y="'+(y(GM)-10)+'" text-anchor="end" font-size="26" fill="#111" opacity="'+(gmFaint?.4:1)+'" style="font-family:Patrick Hand,cursive">M = '+fmt(GM,GM%1?2:0)+'</text>';
+  const step=o.step||0, cur=o.cur===false?-1:step-1;
+  const seg=k=>{const p=P[k]; if(o.mode==='total')return [p.v,GM]; if(o.mode==='within')return [p.v,gm[p.g]]; return [gm[p.g],GM]};
+  if(cur>=0&&o.mode){const [a,b]=seg(cur),d=Math.abs(a-b),side=d*yU; if(side>0){let sx=xs[cur]; if(sx+side>W-8)sx=xs[cur]-side;
+    s+='<rect x="'+sx+'" y="'+Math.min(y(a),y(b))+'" width="'+side+'" height="'+side+'" fill="#D6146F" fill-opacity=".14" stroke="#D6146F" stroke-width="2.5"/>';}
+    s+='<text x="'+(xs[cur]+(side>0&&xs[cur]+side<=W-8?side/2:-side/2))+'" y="'+(Math.min(y(a),y(b))+Math.max(side/2,0)+10)+'" text-anchor="middle" font-size="30" fill="#D6146F" style="font-family:Patrick Hand,cursive">'+(d*d)+'</text>';}
+  for(let k=0;k<Math.min(step,n);k++){const [a,b]=seg(k);
+    s+='<line x1="'+xs[k]+'" x2="'+xs[k]+'" y1="'+y(a)+'" y2="'+y(b)+'" stroke="'+(k===cur?'#D6146F':(o.resid?'#D6146F':'#8A8A84'))+'" stroke-width="'+(k===cur?4:3)+'"/>';}
+  P.forEach((p,k)=>{const c=o.colors?G[p.g].hex:'#111';
+    s+='<circle cx="'+xs[k]+'" cy="'+y(p.v)+'" r="10" fill="'+c+'" stroke="#FCFCFA" stroke-width="2.5"/>';});
+  svg.innerHTML=s;
+}
+function chips(el,P,mode,step){
+  const GM=mean(P.map(p=>p.v)), gm=[0,1,2].map(gi=>mean(P.filter(p=>p.g===gi).map(p=>p.v)));
+  let sum=0;
+  el.innerHTML=P.map((p,k)=>{
+    const [a,b]=mode==='total'?[p.v,GM]:mode==='within'?[p.v,gm[p.g]]:[gm[p.g],GM];
+    const t=(a-b)*(a-b); if(k<step)sum+=t;
+    const cls='chip'+(k<step?' on':'')+(k===step-1?' cur':'');
+    const gc=mode==='total'?'':'--gc:'+G[p.g].hex;
+    return '<div class="'+cls+'" style="'+gc+'">'+(k<step?'('+a+' − '+b+')² = '+t:'('+a+' − '+b+')² = ?')+'</div>';
+  }).join('');
+  return sum;
+}
+const LBL={total:'SS ogółem',within:'SS wewnątrzgrupowa',between:'SS międzygrupowa'};
+function ssSlide(chId,cpId,sumId,mode,P,extra){
+  return {max:P.length,render(st){
+    chart(document.getElementById(chId),{persons:P,mode,step:st,colors:mode!=='total',groups:mode!=='total'});
+    const sum=chips(document.getElementById(cpId),P,mode,st);
+    document.getElementById(sumId).innerHTML=LBL[mode]+' = '+(st===P.length?'<b>'+sum+'</b>':sum+(st?' + …':''));
+    if(extra)extra(st);
+  }};
+}
+
+/* ---------- slide behaviours ---------- */
+const PG=byGroup(G);
+const B={
+  p2:ssSlide('ch2','cp2','sum2','total',ORDER_TOTAL),
+  p3:{max:1,render(st){document.getElementById('cloud3')._set(st?'color':'plain')}},
+  p4:{max:1,render(st){document.getElementById('cloud4')._set(st?'group':'color')}},
+  p6:ssSlide('ch6','cp6','sum6','within',PG,st=>{document.getElementById('cmp6').style.visibility=st===15?'visible':'hidden'}),
+  p7:{max:0,render(){chart(document.getElementById('ch7'),{persons:PG,mode:'within',step:15,cur:false,colors:true,groups:true,resid:true})}},
+  p8:{max:1,render(st){const a=document.getElementById('b8a'),b=document.getElementById('b8b');
+      a.style.width=st?(160/178*100)+'%':'100%'; b.style.width=st?(18/178*100)+'%':'0';
+      a.textContent=st?'SS międzygrupowa = 160':'SS międzygrupowa + SS wewnątrzgrupowa'; b.textContent=st?'18':''}},
+  p9:ssSlide('ch9','cp9','sum9','between',PG)
+};
+
+/* df calculator */
+const dfk=document.getElementById('dfk'),dfn=document.getElementById('dfn');
+function dfUpd(){const k=Math.max(2,parseInt(dfk.value,10)||2),N=Math.max(k+1,parseInt(dfn.value,10)||k+1);
+  document.getElementById('dfb1').innerHTML=k+' − 1 = <b>'+(k-1)+'</b>';
+  document.getElementById('dfw1').innerHTML=N+' − '+k+' = <b>'+(N-k)+'</b>';
+  document.getElementById('dfnote').textContent=(k===3&&N===15)?'W naszym badaniu: 3 grupy i 15 osób badanych.':'Przykład: '+k+' grup(y), '+N+' osób badanych.';}
+dfk.addEventListener('input',dfUpd);dfn.addEventListener('input',dfUpd);dfUpd();
+
+/* ---------- F distribution ---------- */
+function lgamma(z){const c=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(z<0.5)return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*z)))-lgamma(1-z);z-=1;let x=0.99999999999980993;for(let i=0;i<8;i++)x+=c[i]/(z+i+1);const t=z+7.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x)}
+function betacf(a,b,x){let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;
+  for(let m=1;m<=200;m++){const m2=2*m;let aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<3e-12)break}return h}
+function ibeta(x,a,b){if(x<=0)return 0;if(x>=1)return 1;const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b}
+const fP=(F,d1,d2)=>F<=0?1:1-ibeta(d1*F/(d1*F+d2),d1/2,d2/2);
+function fCrit(al,d1,d2){let lo=0,hi=1000;for(let i=0;i<100;i++){const m=(lo+hi)/2;fP(m,d1,d2)>al?lo=m:hi=m}return (lo+hi)/2}
+function fPdf(x,d1,d2){if(x<=0)return d1===2?1:0;return Math.exp(0.5*(d1*Math.log(d1*x)+d2*Math.log(d2)-(d1+d2)*Math.log(d1*x+d2))-Math.log(x)-(lgamma(d1/2)+lgamma(d2/2)-lgamma((d1+d2)/2)))}
+(function(){const svg=document.getElementById('fcurve'),W=760,H=230,xm=8,X=x=>40+x/xm*(W-120),Y=y=>H-36-y*170;
+  const cr=fCrit(.05,2,12);document.getElementById('fcrit').textContent=fmt(cr,2)+' (5% najbardziej skrajnych wyników, α = 0,05)';
+  let d='M'+X(0)+' '+Y(fPdf(0,2,12)),sh='M'+X(cr)+' '+Y(0);
+  for(let x=0.02;x<=xm;x+=0.02){d+=' L'+X(x)+' '+Y(fPdf(x,2,12)); if(x>=cr)sh+=' L'+X(x)+' '+Y(fPdf(x,2,12))}
+  sh+=' L'+X(xm)+' '+Y(0)+' Z';
+  let s='<line x1="40" x2="'+(W-70)+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="#111" stroke-width="2"/>';
+  for(let t=0;t<=xm;t+=2)s+='<text x="'+X(t)+'" y="'+(H-10)+'" text-anchor="middle" font-size="16" fill="#66665F">'+t+'</text>';
+  s+='<path d="'+sh+'" fill="#D6146F" fill-opacity=".35"/><path d="'+d+'" fill="none" stroke="#111" stroke-width="3"/>';
+  s+='<line x1="'+X(cr)+'" x2="'+X(cr)+'" y1="'+Y(0)+'" y2="'+Y(.62)+'" stroke="#D6146F" stroke-width="2.5" stroke-dasharray="6 5"/><text x="'+(X(cr)+8)+'" y="'+Y(.55)+'" font-size="17" fill="#D6146F">F kryt. = '+fmt(cr,2)+'</text>';
+  s+='<text x="'+(W-8)+'" y="'+(Y(0)-14)+'" text-anchor="end" font-size="30" fill="#D6146F" style="font-family:Patrick Hand,cursive">F = 53,33 →</text>';
+  s+='<text x="'+X(1.2)+'" y="'+Y(.9)+'" font-size="17" fill="#66665F">rozkład F(2, 12)</text>';
+  svg.innerHTML=s})();
+
+/* ---------- lab ---------- */
+const PRE={orig:[[3,3,4,2,3],[9,8,6,7,5],[10,11,13,10,11]],same:[[6,8,7,5,9],[7,6,8,9,5],[8,6,7,9,5]],spread:[[0,6,1,5,3],[2,12,4,10,7],[6,16,9,14,10]]};
+const lc=document.getElementById('labcols');
+lc.innerHTML=G.map((g,gi)=>'<div class="lab-col" style="--g:'+g.hex+'"><div class="ch">'+g.name+'</div>'+[0,1,2,3,4].map(i=>'<input id="lab'+gi+'_'+i+'" type="number" min="0" max="20" aria-label="'+g.name+', osoba '+(i+1)+'">').join('')+'<p class="gm" id="labm'+gi+'"></p></div>').join('');
+function setLab(d){d.forEach((a,gi)=>a.forEach((v,i)=>document.getElementById('lab'+gi+'_'+i).value=v));labCalc()}
+function labCalc(){
+  const d=[0,1,2].map(gi=>[0,1,2,3,4].map(i=>{let v=parseFloat(document.getElementById('lab'+gi+'_'+i).value);return isNaN(v)?0:Math.max(0,Math.min(20,v))}));
+  const all=d.flat(),GM=mean(all),gm=d.map(mean);
+  const SSB=d.reduce((s,a,gi)=>s+a.length*(gm[gi]-GM)**2,0),SSW=d.reduce((s,a,gi)=>s+a.reduce((t,v)=>t+(v-gm[gi])**2,0),0),SST=SSB+SSW;
+  const MSB=SSB/2,MSW=SSW/12;let F,p;
+  if(MSW>0){F=MSB/MSW;p=fP(F,2,12)}else{F=SSB>0?Infinity:NaN;p=SSB>0?0:NaN}
+  d.forEach((a,gi)=>document.getElementById('labm'+gi).textContent='M = '+fmt(gm[gi],1));
+  const fs=isFinite(F)?fmt(F,3):(isNaN(F)?'—':'∞'), ps=isNaN(p)?'—':(p<.001?'<,001':fmt(p,3).replace(/^0/,''));
+  document.getElementById('labtab').innerHTML='<caption>Jednoczynnikowa ANOVA</caption><tr><th></th><th>Suma kwadratów</th><th>df</th><th>Średni kwadrat</th><th>F</th><th>Istotność</th></tr>'+
+    '<tr><td>Między grupami</td><td>'+fmt(SSB,3)+'</td><td>2</td><td>'+fmt(MSB,3)+'</td><td>'+fs+'</td><td>'+ps+'</td></tr>'+
+    '<tr><td>Wewnątrz grup</td><td>'+fmt(SSW,3)+'</td><td>12</td><td>'+fmt(MSW,3)+'</td><td></td><td></td></tr>'+
+    '<tr><td>Ogółem</td><td>'+fmt(SST,3)+'</td><td>14</td><td></td><td></td><td></td></tr>';
+  const b=document.getElementById('labB'),w=document.getElementById('labW');
+  const pb=SST?SSB/SST*100:50;b.style.width=pb+'%';w.style.width=(100-pb)+'%';
+  b.textContent=pb>18?'między '+fmt(pb,0)+'%':'';w.textContent=(100-pb)>18?'wewnątrz '+fmt(100-pb,0)+'%':'';
+  const v=document.getElementById('labv');
+  v.innerHTML=isNaN(p)?'Wszystkie wyniki są takie same – nie ma czego wyjaśniać.':
+    (p<.05?'<b>F = '+fs+', p '+(p<.001?'< 0,001':'= '+fmt(p,3))+'.</b> Wielkość miasta istotnie różnicuje ekstrawersję (α = 0,05).':
+    '<b>F = '+fs+', p = '+fmt(p,3)+'.</b> Różnice między grupami nie są istotne statystycznie (α = 0,05).')+' Wartość krytyczna F(2, 12) = '+fmt(fCrit(.05,2,12),2)+'.';
+  chart(document.getElementById('labchart'),{persons:d.flatMap((a,gi)=>a.map(v=>({v,g:gi}))),mode:'within',step:15,cur:false,colors:true,groups:true,resid:true,H:480,vmax:20});
+}
+lc.addEventListener('input',labCalc);
+document.querySelector('#lab .ctrl').addEventListener('click',e=>{const k=e.target.closest('[data-preset]');if(!k)return;
+  if(k.dataset.preset==='rand')setLab([0,1,2].map(()=>[0,1,2,3,4].map(()=>Math.floor(Math.random()*15))));else setLab(PRE[k.dataset.preset])});
+setLab(PRE.orig);
+
+/* ---------- quiz ---------- */
+const QZ=[
+  {q:'Która suma kwadratów trafia do mianownika statystyki F (przez średni kwadrat)?',o:['międzygrupowa','wewnątrzgrupowa','ogółem'],a:1,e:'F = MS międzygrupowy / MS wewnątrzgrupowy, więc w mianowniku jest zmienność wewnątrz grup.'},
+  {q:'Ile wynoszą stopnie swobody międzygrupowe, gdy porównujemy 4 grupy?',o:['4','3','12'],a:1,e:'Liczba grup − 1, czyli 4 − 1 = 3.'},
+  {q:'Średnie grup zostają te same, ale wyniki w grupach są bardziej rozrzucone. Co dzieje się z F?',o:['rośnie','maleje','nie zmienia się'],a:1,e:'Rośnie SS wewnątrzgrupowa, czyli mianownik – więc F maleje. Sprawdź w laboratorium.'}
+];
+document.getElementById('quizbox').innerHTML=QZ.map((z,qi)=>'<div class="q"><p class="qq">'+(qi+1)+'. '+z.q+'</p><div class="opts">'+z.o.map((o,oi)=>'<button class="b" type="button" data-q="'+qi+'" data-o="'+oi+'">'+o+'</button>').join('')+'</div><p class="fb" id="fb'+qi+'"></p></div>').join('');
+document.getElementById('quizbox').addEventListener('click',e=>{const t=e.target.closest('[data-q]');if(!t)return;const z=QZ[+t.dataset.q],ok=+t.dataset.o===z.a;
+  t.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('ok','no'));t.classList.add(ok?'ok':'no');
+  document.getElementById('fb'+t.dataset.q).textContent=(ok?'Dobrze! ':'Nie tym razem. ')+z.e});
+
+/* ---------- navigation & steps ---------- */
+const stage=document.getElementById('stage'),vp=document.getElementById('viewport');
+const slides=[...stage.querySelectorAll('.slide')];const state={};let cur=0;
+const maxOf=sl=>{const b=B[sl.id];let m=b?b.max:0;sl.querySelectorAll('[data-show]').forEach(e=>m=Math.max(m,+e.dataset.show));return m};
+function apply(sl){const st=state[sl.id]||0;sl.querySelectorAll('[data-show]').forEach(e=>e.classList.toggle('shown',st>=+e.dataset.show));if(B[sl.id])B[sl.id].render(st)}
+slides.forEach(sl=>{state[sl.id]=0;apply(sl)});
+function fit(){const s=Math.min(vp.clientWidth/1600,vp.clientHeight/900);stage.style.transform='translate(-50%,-50%) scale('+s+')'}
+window.addEventListener('resize',fit); if(window.ResizeObserver)new ResizeObserver(fit).observe(vp);
+function show(n,atEnd){cur=Math.max(0,Math.min(slides.length-1,n));const sl=slides[cur];
+  if(atEnd){state[sl.id]=maxOf(sl);apply(sl)}
+  slides.forEach((s,i)=>s.classList.toggle('active',i===cur));
+  document.getElementById('count').textContent=(cur+1)+' / '+slides.length;
+  document.getElementById('sec').textContent=sl.dataset.sec||'';
+  document.getElementById('progress').style.width=((cur+1)/slides.length*100)+'%';
+  const nt=sl.querySelector('.notes');document.getElementById('notesText').textContent=nt?nt.textContent:'';
+  try{sessionStorage.setItem('anova-slide',cur)}catch(e){}}
+function next(){const sl=slides[cur];if(state[sl.id]<maxOf(sl)){state[sl.id]++;apply(sl)}else if(cur<slides.length-1)show(cur+1)}
+function prev(){const sl=slides[cur];if(state[sl.id]>0){state[sl.id]--;apply(sl)}else if(cur>0)show(cur-1,true)}
+document.getElementById('next').onclick=next;document.getElementById('prev').onclick=prev;
+stage.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const sl=a.closest('.slide');
+  if(a.dataset.act==='next'){if(state[sl.id]<maxOf(sl)){state[sl.id]++;apply(sl)}}
+  else if(a.dataset.act==='all'){state[sl.id]=maxOf(sl);apply(sl)} else {state[sl.id]=0;apply(sl)}});
+const notesBtn=document.getElementById('notesBtn'),panel=document.getElementById('notesPanel');
+function toggleNotes(){const o=panel.hidden;panel.hidden=!o;document.body.classList.toggle('notes-open',o);notesBtn.setAttribute('aria-pressed',String(o));fit()}
+notesBtn.onclick=toggleNotes;
+function fullscreen(){try{if(document.fullscreenElement){document.exitFullscreen().catch(()=>{})}else{const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(()=>{})}}catch(e){}}
+document.getElementById('fsBtn').onclick=fullscreen;
+document.addEventListener('keydown',e=>{if(e.target.closest('input'))return;const k=e.key.toLowerCase();
+  if(k==='arrowright'||k==='pagedown'||e.key===' '){e.preventDefault();next()}
+  else if(k==='arrowleft'||k==='pageup'){e.preventDefault();prev()}
+  else if(k==='home')show(0);else if(k==='end')show(slides.length-1);
+  else if(k==='n')toggleNotes();else if(k==='f')fullscreen()});
+let x0=null;vp.addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
+vp.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>60)(dx<0?next:prev)();x0=null});
+let start=0;try{start=parseInt(sessionStorage.getItem('anova-slide'),10)||0}catch(e){}
+fit();show(start);
+})();
+</script>
+
+</body></html>
