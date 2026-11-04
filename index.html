@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zaawansowana Analiza Statystyczna</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Courier+Prime:wght@400;700&display=swap">
+<style>
+:root{
+  --paper:#ffffff;--ink:#111111;--soft:#4a4a4a;--red:#e3201b;--yellow:#ffc21a;--blue:#1f78c8;
+  --f-display:"Titan One","Arial Black",Impact,sans-serif;
+  --f-body:"Courier Prime","Courier New",Courier,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.5}
+main{max-width:860px;margin:0 auto;padding-block:48px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+.bar{height:6px;background:var(--red);width:90px}
+.eyebrow{font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:.75em;color:var(--soft)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(36px,7vw,64px);line-height:1.02;margin:0;text-wrap:balance}
+.author{display:inline-block;background:linear-gradient(transparent 62%,var(--yellow) 62%,var(--yellow) 90%,transparent 90%)}
+ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px}
+a.card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:center;text-decoration:none;color:var(--ink);border:3px solid var(--ink);padding:16px 20px;box-shadow:7px 7px 0 var(--yellow);transition:transform .08s,box-shadow .08s}
+a.card:hover{background:#fff7da}
+a.card:active{transform:translate(4px,4px);box-shadow:3px 3px 0 var(--yellow)}
+a.card:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.num{font-family:var(--f-display);font-size:40px;line-height:1;min-width:1.2em;text-align:center}
+.t{font-family:var(--f-display);font-size:1.25em;line-height:1.15}
+.d{color:var(--soft);font-size:.9em}
+.go{font-weight:700;font-size:1.4em}
+.soon,.msg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;border:3px dashed #b9b9b9;padding:16px 20px;color:#8a8a8a}
+.soon .num{color:#b9b9b9}
+.msg{grid-template-columns:1fr}
+@media (prefers-reduced-motion:reduce){a.card{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="bar"></div>
+  <div class="eyebrow">Materiały do zajęć</div>
+  <h1>Zaawansowana Analiza Statystyczna</h1>
+  <div><span class="author">mgr Michał Zięba</span></div>
+  <ol id="list"><li><div class="msg">Wczytuję listę zajęć…</div></li></ol>
+</main>
+<script>
+/* Lista buduje się sama: strona sprawdza pliki zajecia1.html, zajecia2.html, …
+   które leżą obok niej w repozytorium, i z każdego bierze tytuł pierwszego slajdu.
+   Żeby dodać zajęcia, wystarczy wrzucić kolejny plik zajeciaN.html. */
+(function(){
+const MAX=30;
+const list=document.getElementById('list');
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+async function probe(n){
+  const url='zajecia'+n+'.html';
+  try{
+    const r=await fetch(url,{headers:{Range:'bytes=0-60000'},cache:'no-cache'});
+    if(!(r.ok||r.status===206))return null;
+    const html=(await r.text()).slice(0,60000);
+    const doc=new DOMParser().parseFromString(html,'text/html');
+    const h1=doc.querySelector('h1');
+    if(h1)h1.querySelectorAll('br').forEach(b=>b.replaceWith(' '));
+    const title=(h1&&h1.textContent.trim())||(doc.querySelector('title')||{}).textContent||('Zajęcia '+n);
+    return {n,url,title:title.replace(/\s+/g,' ')};
+  }catch(e){return null}
+}
+Promise.all(Array.from({length:MAX},(_,i)=>probe(i+1))).then(res=>{
+  const found=res.filter(Boolean);
+  if(location.protocol==='file:'){list.innerHTML='<li><div class="msg">Ta strona buduje listę sama, ale tylko po wrzuceniu na GitHub Pages. Otwarta z dysku nie widzi plików obok siebie.</div></li>';return}
+  if(!found.length){list.innerHTML='<li><div class="msg">Nie znalazłem jeszcze żadnych plików zajecia1.html, zajecia2.html… w tym repozytorium.</div></li>';return}
+  const next=Math.max(...found.map(f=>f.n))+1;
+  list.innerHTML=found.map(f=>'<li><a class="card" href="'+esc(f.url)+'"><span class="num">'+f.n+'</span><span><span class="t">'+esc(f.title)+'</span><br><span class="d">Zajęcia '+f.n+'</span></span><span class="go" aria-hidden="true">→</span></a></li>').join('')+
+    '<li><div class="soon"><span class="num">'+next+'</span><span>Kolejne zajęcia pojawią się tutaj.</span></div></li>';
+});
+})();
+</script>
+</body>
+</html>
