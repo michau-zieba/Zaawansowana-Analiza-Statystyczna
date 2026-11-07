@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wykres interakcji</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Caveat+Brush&display=swap">
+<style>
+/* Layout: the draggable interaction plot is the hero on the left; live tables (means, ANOVA, simple effects) on the right;
+   task cards underneath. Single deliberate light look matching the course slides. */
+:root{
+  color-scheme:light;
+  --paper:#ffffff; --ink:#111111; --soft:#555555; --rule:#e6e3ea; --chip:#f4f2f6;
+  --red:#e3201b; --yellow:#ffc21a; --blue:#1f78c8; --green:#22a447; --ok:#1d8a3c; --okbg:#e3f6e8; --nobg:#f1f1f1;
+  --f-display:"Titan One","Arial Black",Impact,sans-serif;
+  --f-body:"Courier Prime","Courier New",Courier,monospace;
+  --f-hand:"Caveat Brush","Comic Sans MS",cursive;
+  --f-table:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:1360px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+.eyebrow{font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:.75em;color:var(--soft)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,5vw,58px);line-height:1.02;margin:6px 0 0}
+h2{font-family:var(--f-display);font-weight:400;font-size:clamp(20px,2.2vw,26px);margin:0;line-height:1.1}
+p{margin:0;max-width:72ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:26px;align-items:start}
+.grid>*{min-width:0}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.box{border:3px solid var(--ink);padding:16px;background:var(--paper);display:flex;flex-direction:column;gap:12px}
+.sh-y{box-shadow:7px 7px 0 var(--yellow)}.sh-r{box-shadow:7px 7px 0 var(--red)}.sh-b{box-shadow:7px 7px 0 var(--blue)}.sh-g{box-shadow:7px 7px 0 var(--green)}
+.btn{font:inherit;font-weight:700;cursor:pointer;border:3px solid var(--ink);background:var(--paper);color:var(--ink);padding:.3em .7em;box-shadow:3px 3px 0 var(--ink)}
+.btn:hover{background:#fff7da}.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.sel{background:var(--ink);color:var(--paper)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hint{font-size:.85em;color:var(--soft)}
+#plot{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+#plot text{font-family:var(--f-body);fill:var(--ink)}
+.pt{cursor:grab}.pt:focus{outline:none}.pt:focus-visible .ring{stroke:var(--blue);stroke-width:5}
+.seg{cursor:ns-resize}
+.dragging,.dragging *{cursor:grabbing!important}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center}
+.sl label{font-weight:700;font-size:.9em}
+.sl output{font-family:var(--f-display);font-size:1.15em}
+.sl input{grid-column:1/-1;width:100%;accent-color:var(--red)}
+.two-sl{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+/* tables */
+.jt{font-family:var(--f-table);background:#fff;color:#333;border:1px solid #e3e3e3;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:10px 16px 8px;overflow-x:auto}
+.jt .tt{font-size:.92em;margin-bottom:4px}
+.jt table{border-collapse:collapse;font-size:.86em;font-variant-numeric:tabular-nums;width:100%;min-width:480px}
+.jt th{font-weight:400;text-align:right;padding:.3em .6em;border-top:1.5px solid #333;border-bottom:1px solid #333;white-space:nowrap}
+.jt th:first-child,.jt td:first-child{text-align:left}
+.jt td{text-align:right;padding:.26em .6em;white-space:nowrap}
+.jt tbody tr:last-child td{border-bottom:1.5px solid #333}
+.jt td.l{text-align:left}
+.jt td.ps{background:var(--okbg);color:var(--ok);font-weight:700}
+.chip{display:inline-block;font-family:var(--f-body);font-weight:700;font-size:.85em;padding:.05em .5em;border:2px solid currentColor}
+.chip.ok{color:var(--ok);background:var(--okbg)}.chip.no{color:#777;background:var(--nobg)}
+.means{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabular-nums;font-size:.95em}
+.means th{background:var(--red);color:#fff;font-weight:700;padding:.25em .6em;text-align:left}
+.means th.c{background:transparent}
+.means td{background:#ececec;font-weight:700;padding:.25em .8em;text-align:right;min-width:4em}
+.means td.m{background:#fff;border:3px dashed var(--ink)}
+.dot{display:inline-block;width:.8em;height:.8em;border:2px solid var(--ink);vertical-align:-1px;margin-right:.35em}
+/* tasks */
+.tasks{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:22px;align-items:start}
+.tlist{display:flex;flex-direction:column;gap:8px}
+.tlist button{font:inherit;text-align:left;display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;gap:8px;align-items:center;border:3px solid var(--ink);background:var(--paper);padding:.35em .5em;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.tlist button .n{font-family:var(--f-hand);font-size:1.5em;color:var(--yellow);-webkit-text-stroke:1px #b88600;line-height:1;text-align:center}
+.tlist button.sel{background:#fff7da}
+.tlist button .st{font-weight:700;color:var(--ok)}
+.task h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.35em}
+.conds{display:flex;flex-direction:column;gap:6px;list-style:none;margin:0;padding:0}
+.conds li{display:grid;grid-template-columns:1.6em minmax(0,1fr);gap:6px;align-items:baseline}
+.conds li .ic{font-weight:700;text-align:center}
+.conds li.ok .ic{color:var(--ok)}.conds li.no .ic{color:var(--red)}
+.done{border:3px solid var(--ok);background:var(--okbg);padding:.5em .8em;font-weight:700;color:var(--ok)}
+.hintbox{border-left:6px solid var(--yellow);background:#fffbe6;padding:.4em .8em;font-size:.92em}
+@media (max-width:1020px){.grid,.tasks{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.two-sl{grid-template-columns:1fr}}
+</style>
+
+</head>
+<body>
+<main class="wrap">
+ <header>
+  <div class="eyebrow">Zaawansowana analiza statystyczna · narzędzie</div>
+  <h1>Wykres interakcji</h1>
+  <p style="margin-top:10px">Przeciągaj punkty albo całe linie na wykresie. Tabele obok od razu przeliczają efekty główne, interakcję i efekty proste. Na dole czeka 6 zadań: ustaw linie tak, żeby uzyskać opisany wynik.</p>
+ </header>
+
+ <div class="grid">
+  <div class="col">
+   <section class="box sh-y" aria-labelledby="h-plot">
+    <div class="row" style="justify-content:space-between">
+     <h2 id="h-plot">Wyniki z egzaminu</h2>
+     <div class="row">
+      <label class="row" style="gap:6px;font-weight:700;font-size:.9em"><input type="checkbox" id="marg"> średnie brzegowe</label>
+      <button class="btn" type="button" id="reset">Dane z ćwiczeń</button>
+     </div>
+    </div>
+    <svg id="plot" viewBox="0 0 760 520" role="group" aria-label="Wykres interakcji. Punkty można przesuwać myszą, palcem albo strzałkami w górę i w dół."></svg>
+    <p class="hint" id="margHint" hidden>Szare romby i przerywana linia to <b>średnie dla muzyki</b> (efekt główny muzyki). Kreski z prawej to <b>średnie dla sposobu nauki</b> (efekt główny nauki).</p>
+    <p class="hint">Złap <b>punkt</b>, żeby zmienić jedną średnią. Złap <b>linię</b> między punktami, żeby przesunąć ją całą. Z klawiatury: Tab do punktu, potem strzałki ↑ ↓ (z Shift co 5).</p>
+    <div class="two-sl">
+     <div class="sl"><label for="n">Osób w grupie (n)</label><output id="nO"></output><input id="n" type="range" min="3" max="40" step="1"></div>
+     <div class="sl"><label for="sd">Odchylenie standardowe (SD)</label><output id="sdO"></output><input id="sd" type="range" min="2" max="20" step="0.1"></div>
+    </div>
+   </section>
+  </div>
+
+  <div class="col">
+   <section aria-label="Średnie w grupach">
+    <table class="means" id="means"></table>
+   </section>
+   <section class="jt" aria-label="Tabela ANOVA">
+    <div class="tt">ANOVA - wyniki z egzaminu</div>
+    <table><thead><tr><th></th><th>Suma kwadratów</th><th>df</th><th>Średni kwadrat</th><th>F</th><th>p</th><th>η²<sub>p</sub></th></tr></thead><tbody id="anova"></tbody></table>
+    <p class="hint" style="margin-top:6px;font-family:var(--f-body)">Zielone p = efekt istotny (α = 0,05).</p>
+   </section>
+   <section class="jt" aria-label="Efekty proste">
+    <div class="tt">Efekty proste</div>
+    <table><thead><tr><th>Efekt</th><th>na poziomie</th><th>Różnica</th><th>F</th><th>p</th><th></th></tr></thead><tbody id="simple"></tbody></table>
+   </section>
+  </div>
+ </div>
+
+ <section class="box sh-b" aria-labelledby="h-tasks">
+  <h2 id="h-tasks">Zadania</h2>
+  <div class="tasks">
+   <div class="tlist" id="tlist"></div>
+   <div class="task" id="task" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+ </section>
+</main>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+/* ---- stats ---- */
+function lgamma(z){const c=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(z<0.5)return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*z)))-lgamma(1-z);z-=1;let x=0.99999999999980993;for(let i=0;i<8;i++)x+=c[i]/(z+i+1);const t=z+7.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x)}
+function betacf(a,b,x){let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;
+  for(let m=1;m<=300;m++){const m2=2*m;let aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<3e-12)break}return h}
+function ibeta(x,a,b){if(x<=0)return 0;if(x>=1)return 1;const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b}
+const fP=(F,d1,d2)=>!(F>0)?1:1-ibeta(d1*F/(d1*F+d2),d1/2,d2/2);
+const ALPHA=.05;
+/* M[line][x]: line 0 = regularna, 1 = intensywna; x 0 = brak muzyki, 1 = głośna muzyka */
+const LECT={M:[[84,73.2],[74.2,72.7]],n:6,sd:5.4};
+let M=LECT.M.map(r=>[...r]),n=LECT.n,sd=LECT.sd;
+const YLO=50,YHI=100;
+function stats(){const [[a,b],[c,d]]=M;const G=(a+b+c+d)/4,mx=[(a+c)/2,(b+d)/2],ml=[(a+b)/2,(c+d)/2];
+  const dfE=4*(n-1),MSE=sd*sd,SSE=dfE*MSE;
+  const SSA=2*n*((mx[0]-G)**2+(mx[1]-G)**2),SSB=2*n*((ml[0]-G)**2+(ml[1]-G)**2),r=a-ml[0]-mx[0]+G,SSAB=4*n*r*r;
+  const ef=(ss)=>{const F=ss/MSE;return {ss,F,p:fP(F,1,dfE),etap:ss/(ss+SSE)}};
+  const se=(diff)=>{const F=n*diff*diff/(2*MSE);return {diff,F,p:fP(F,1,dfE)}};
+  return {G,mx,ml,dfE,MSE,SSE,A:ef(SSA),B:ef(SSB),AB:ef(SSAB),
+    /* simple effects */
+    naukaBrak:se(a-c),naukaGl:se(b-d),muzReg:se(a-b),muzInt:se(c-d)}}
+const sig=e=>e.p<ALPHA;
+const fp=p=>p<.001?'< .001':p.toFixed(3);
+const pl=x=>String(+x.toFixed(1)).replace('.',',');
+const chip=e=>sig(e)?'<span class="chip ok">istotny</span>':'<span class="chip no">nieistotny</span>';
+/* ---- plot ---- */
+const svg=$('#plot'),NS='http://www.w3.org/2000/svg';
+const X0=96,X1=600,Y0=440,Y1=24,XS=[X0+(X1-X0)*0.22,X0+(X1-X0)*0.78];
+const sy=v=>Y0-(v-YLO)/(YHI-YLO)*(Y0-Y1),vy=y=>YLO+(Y0-y)/(Y0-Y1)*(YHI-YLO);
+const COL=['#1f78c8','#22a447'],NAME=['regularna nauka','intensywna nauka'],SHORT=['regularna','intensywna'],XN=['brak muzyki','głośna muzyka'];
+function el(t,a,p,txt){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;(p||svg).appendChild(e);return e}
+const clamp=v=>Math.max(YLO,Math.min(YHI,Math.round(v*2)/2));
+let drag=null;
+function svgY(ev){const pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse()).y}
+function drawPlot(){
+  svg.innerHTML='';
+  for(let t=YLO;t<=YHI;t+=10){el('line',{x1:X0,x2:X1,y1:sy(t),y2:sy(t),stroke:'#e6e3ea','stroke-width':1.5});el('text',{x:X0-12,y:sy(t)+6,'text-anchor':'end','font-size':18},null,t)}
+  el('line',{x1:X0,x2:X1,y1:Y0,y2:Y0,stroke:'#111','stroke-width':3});el('line',{x1:X0,x2:X0,y1:Y1,y2:Y0,stroke:'#111','stroke-width':3});
+  XN.forEach((l,i)=>el('text',{x:XS[i],y:Y0+30,'text-anchor':'middle','font-size':19,'font-weight':700},null,l));
+  el('text',{x:(X0+X1)/2,y:Y0+62,'text-anchor':'middle','font-size':19},null,'muzyka');
+  el('text',{x:26,y:(Y0+Y1)/2,'text-anchor':'middle','font-size':19,transform:`rotate(-90 26 ${(Y0+Y1)/2})`},null,'wynik z egzaminu');
+  const S=stats();
+  if($('#marg').checked){
+    el('line',{x1:XS[0],x2:XS[1],y1:sy(S.mx[0]),y2:sy(S.mx[1]),stroke:'#999','stroke-width':4,'stroke-dasharray':'10 8'});
+    S.mx.forEach((v,i)=>{el('rect',{x:XS[i]-9,y:sy(v)-9,width:18,height:18,fill:'#fff',stroke:'#777','stroke-width':3,transform:`rotate(45 ${XS[i]} ${sy(v)})`})});
+    S.ml.forEach((v,k)=>{el('line',{x1:X1+8,x2:X1+30,y1:sy(v),y2:sy(v),stroke:COL[k],'stroke-width':5});el('text',{x:X1+34,y:sy(v)+6,'font-size':15,fill:COL[k],'font-weight':700},null,pl(v))});
+  }
+  M.forEach((row,k)=>{
+    const seg=el('line',{x1:XS[0],x2:XS[1],y1:sy(row[0]),y2:sy(row[1]),stroke:COL[k],'stroke-width':8,'stroke-linecap':'round'});
+    const hit=el('line',{x1:XS[0],x2:XS[1],y1:sy(row[0]),y2:sy(row[1]),stroke:'transparent','stroke-width':30,class:'seg'});
+    hit.addEventListener('pointerdown',ev=>startDrag(ev,k,-1));
+    row.forEach((v,i)=>{const g=el('g',{class:'pt',tabindex:0,role:'slider','aria-label':NAME[k]+', '+XN[i],'aria-valuemin':YLO,'aria-valuemax':YHI,'aria-valuenow':v});
+      el('circle',{cx:XS[i],cy:sy(v),r:24,fill:'transparent'},g);
+      if(k===0)el('circle',{class:'ring',cx:XS[i],cy:sy(v),r:13,fill:COL[k],stroke:'#111','stroke-width':3},g);
+      else el('rect',{class:'ring',x:XS[i]-12,y:sy(v)-12,width:24,height:24,fill:COL[k],stroke:'#111','stroke-width':3},g);
+      const other=M[1-k][i],close=Math.abs(other-v)<5,up=v>=other;
+      if(close)el('text',{x:XS[i],y:sy(v)+(up?-24:38),'text-anchor':'middle','font-size':19,'font-weight':700,fill:COL[k]},g,pl(v));
+      else el('text',{x:XS[i]+(i?24:-24),y:sy(v)+7,'text-anchor':i?'start':'end','font-size':19,'font-weight':700,fill:COL[k]},g,pl(v));
+      g.addEventListener('pointerdown',ev=>{ev.stopPropagation();startDrag(ev,k,i)});
+      g.addEventListener('keydown',ev=>{const st=ev.shiftKey?5:0.5;if(ev.key==='ArrowUp'){M[k][i]=clamp(M[k][i]+st);ev.preventDefault();update(k,i)}else if(ev.key==='ArrowDown'){M[k][i]=clamp(M[k][i]-st);ev.preventDefault();update(k,i)}});
+    })});
+  /* legend */
+  el('text',{x:X1+12,y:Y1+50,'font-size':14,fill:'#555'},null,'sposób nauki');
+  SHORT.forEach((nm,k)=>{const y=Y1+80+k*30;if(k===0)el('circle',{cx:X1+20,cy:y-6,r:9,fill:COL[k],stroke:'#111','stroke-width':2.5});else el('rect',{x:X1+11,y:y-15,width:18,height:18,fill:COL[k],stroke:'#111','stroke-width':2.5});
+    el('text',{x:X1+36,y:y,'font-size':15},null,nm)});
+}
+function startDrag(ev,k,i){ev.preventDefault();drag={k,i,y0:svgY(ev),start:[...M[k]],id:ev.pointerId};document.body.classList.add('dragging');
+  window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',endDrag,{once:true});window.addEventListener('pointercancel',endDrag,{once:true})}
+function onMove(ev){if(!drag||ev.pointerId!==drag.id)return;const dv=vy(svgY(ev))-vy(drag.y0);
+  if(drag.i<0){let lo=Math.min(...drag.start),hi=Math.max(...drag.start);const d=Math.max(YLO-lo,Math.min(YHI-hi,dv));M[drag.k]=drag.start.map(v=>clamp(v+d))}
+  else M[drag.k][drag.i]=clamp(drag.start[drag.i]+dv);
+  render()}
+function endDrag(){drag=null;document.body.classList.remove('dragging');window.removeEventListener('pointermove',onMove);render()}
+function update(k,i){render();const g=$$('.pt')[k*2+i];if(g)g.focus()}
+/* ---- tables ---- */
+function drawTables(S){
+  $('#means').innerHTML='<tr><th class="c"></th><th>Brak muzyki</th><th>Głośna muzyka</th><th style="background:var(--ink)">Średnia</th></tr>'+
+    M.map((r,k)=>'<tr><th><span class="dot" style="background:'+COL[k]+'"></span>'+NAME[k].replace(' nauka','')+'</th><td>'+pl(r[0])+'</td><td>'+pl(r[1])+'</td><td class="m">'+pl(S.ml[k])+'</td></tr>').join('')+
+    '<tr><th style="background:var(--ink)">Średnia</th><td class="m">'+pl(S.mx[0])+'</td><td class="m">'+pl(S.mx[1])+'</td><td style="background:transparent"></td></tr>';
+  const row=(nm,e)=>'<tr><td>'+nm+'</td><td>'+e.ss.toFixed(1)+'</td><td>1</td><td>'+e.ss.toFixed(1)+'</td><td>'+e.F.toFixed(2)+'</td><td class="'+(sig(e)?'ps':'')+'">'+fp(e.p)+'</td><td>'+e.etap.toFixed(3)+'</td></tr>';
+  $('#anova').innerHTML=row('muzyka',S.A)+row('sposób nauki',S.B)+row('muzyka ✻ sposób nauki',S.AB)+'<tr><td>Reszty</td><td>'+S.SSE.toFixed(1)+'</td><td>'+S.dfE+'</td><td>'+S.MSE.toFixed(1)+'</td><td></td><td></td><td></td></tr>';
+  const sr=(ef,lev,e,lab)=>'<tr><td class="l">'+ef+'</td><td class="l">'+lev+'</td><td>'+(e.diff>0?'+':'')+pl(e.diff)+' <span style="color:#777">('+lab+')</span></td><td>'+e.F.toFixed(2)+'</td><td>'+fp(e.p)+'</td><td>'+chip(e)+'</td></tr>';
+  $('#simple').innerHTML=sr('sposób nauki','brak muzyki',S.naukaBrak,'reg − int')+sr('sposób nauki','głośna muzyka',S.naukaGl,'reg − int')+
+    sr('muzyka','regularna nauka',S.muzReg,'brak − głośna')+sr('muzyka','intensywna nauka',S.muzInt,'brak − głośna');
+}
+/* ---- tasks ---- */
+const T=[
+ {t:'Efekt prosty nauki tylko bez muzyki',d:'Ustaw linie tak, żeby sposób nauki istotnie różnicował wyniki <b>tylko u osób bez muzyki</b>. Przy głośnej muzyce różnica ma być nieistotna.',
+  c:[[S=>sig(S.naukaBrak),'sposób nauki istotny przy braku muzyki'],[S=>!sig(S.naukaGl),'sposób nauki nieistotny przy głośnej muzyce']],
+  h:'Rozsuń punkty nad „brak muzyki”, a punkty nad „głośna muzyka” zbliż do siebie. Tak wyglądały dane z prezentacji z ćwiczeń.',sol:[[80,72],[66,70]]},
+ {t:'Muzyka szkodzi tylko intensywnym',d:'Muzyka ma istotnie <b>obniżać</b> wyniki osób uczących się intensywnie, a u uczących się regularnie nie mieć istotnego wpływu.',
+  c:[[S=>sig(S.muzInt)&&S.muzInt.diff>0,'muzyka istotnie obniża wyniki przy nauce intensywnej'],[S=>!sig(S.muzReg),'muzyka nieistotna przy nauce regularnej']],
+  h:'Zielona linia ma mocno opadać w prawo, a niebieska być prawie pozioma.',sol:[[75,74],[78,62]]},
+ {t:'Odwrócone efekty proste',d:'Bez muzyki lepsza ma być <b>nauka regularna</b>, a przy głośnej muzyce lepsza <b>nauka intensywna</b>. Obie różnice mają być istotne.',
+  c:[[S=>sig(S.naukaBrak)&&S.naukaBrak.diff>0,'bez muzyki: regularna istotnie lepsza'],[S=>sig(S.naukaGl)&&S.naukaGl.diff<0,'z muzyką: intensywna istotnie lepsza']],
+  h:'Linie muszą się wyraźnie skrzyżować: niebieska wysoko po lewej i nisko po prawej, zielona odwrotnie.',sol:[[80,66],[68,78]]},
+ {t:'Ten sam efekt prosty, bez interakcji',d:'Muzyka ma istotnie obniżać wyniki <b>w obu grupach</b>, i to w podobnym stopniu, tak żeby interakcja była nieistotna.',
+  c:[[S=>sig(S.muzReg)&&S.muzReg.diff>0,'muzyka istotnie obniża wyniki przy nauce regularnej'],[S=>sig(S.muzInt)&&S.muzInt.diff>0,'muzyka istotnie obniża wyniki przy nauce intensywnej'],[S=>!sig(S.AB),'interakcja nieistotna']],
+  h:'Ustaw dwie opadające, równoległe linie. Najłatwiej przeciągać całe linie.',sol:[[80,70],[72,62]]},
+ {t:'Sama interakcja',d:'Istotna ma być <b>tylko interakcja</b>. Oba efekty główne mają być nieistotne.',
+  c:[[S=>sig(S.AB),'interakcja istotna'],[S=>!sig(S.A),'efekt główny muzyki nieistotny'],[S=>!sig(S.B),'efekt główny nauki nieistotny']],
+  h:'Zrób symetryczny „krzyżyk”: średnie brzegowe muszą wyjść prawie równe. Włącz „średnie brzegowe”, żeby to widzieć.',sol:[[80,64],[64,80]]},
+ {t:'Efekt prosty bez efektu głównego',d:'Efekt główny nauki ma być <b>nieistotny</b>, a mimo to przy głośnej muzyce nauka regularna ma być <b>istotnie lepsza</b> od intensywnej.',
+  c:[[S=>!sig(S.B),'efekt główny nauki nieistotny'],[S=>sig(S.naukaGl)&&S.naukaGl.diff>0,'przy głośnej muzyce regularna istotnie lepsza']],
+  h:'Przy głośnej muzyce rozsuń linie (niebieska wyżej), a bez muzyki ustaw zieloną trochę wyżej od niebieskiej. Wtedy różnice się częściowo znoszą w średnich brzegowych.',sol:[[70,80],[78,66]]}
+];
+let cur=0;const solved=new Set(),showHint=new Set();
+function drawTasks(S){
+  $('#tlist').innerHTML=T.map((t,i)=>'<button type="button" class="'+(i===cur?'sel':'')+'" data-i="'+i+'"><span class="n">'+(i+1)+'</span><span>'+t.t+'</span><span class="st">'+(solved.has(i)?'✓':'')+'</span></button>').join('');
+  $$('#tlist button').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;render()});
+  const t=T[cur],res=t.c.map(([f])=>f(S)),ok=res.every(Boolean);
+  if(ok)solved.add(cur);
+  $('#task').innerHTML='<div class="eyebrow">Zadanie '+(cur+1)+' z '+T.length+'</div><h3>'+t.t+'</h3><p>'+t.d+'</p>'+
+    '<ul class="conds">'+t.c.map(([,l],i)=>'<li class="'+(res[i]?'ok':'no')+'"><span class="ic">'+(res[i]?'✓':'✗')+'</span><span>'+l+'</span></li>').join('')+'</ul>'+
+    (ok?'<div class="done">Udało się! Wszystkie warunki są spełnione (α = 0,05).</div>':'')+
+    (showHint.has(cur)?'<div class="hintbox">'+t.h+'</div>':'')+
+    '<div class="row"><button class="btn" type="button" id="hintBtn">'+(showHint.has(cur)?'Ukryj podpowiedź':'Podpowiedź')+'</button><button class="btn" type="button" id="solBtn">Pokaż przykładowe rozwiązanie (n = 10, SD = 8)</button>'+(cur<T.length-1?'<button class="btn" type="button" id="nextBtn">Następne zadanie →</button>':'')+'</div>'+
+    '<p class="hint">Wynik zależy też od n i SD. Przy większym rozrzucie albo mniejszej liczbie osób te same różnice mogą przestać być istotne.</p>';
+  $('#hintBtn').onclick=()=>{showHint.has(cur)?showHint.delete(cur):showHint.add(cur);render()};
+  $('#solBtn').onclick=()=>{M=t.sol.map(r=>[...r]);n=10;sd=8;syncSl();render()};
+  const nb=$('#nextBtn');if(nb)nb.onclick=()=>{cur++;render()};
+}
+/* ---- wiring ---- */
+function syncSl(){$('#n').value=n;$('#sd').value=sd;$('#nO').textContent=n;$('#sdO').textContent=String(sd.toFixed(1)).replace('.',',')}
+$('#n').addEventListener('input',e=>{n=+e.target.value;syncSl();render()});
+$('#sd').addEventListener('input',e=>{sd=+e.target.value;syncSl();render()});
+$('#marg').addEventListener('change',()=>{$('#margHint').hidden=!$('#marg').checked;render()});
+$('#reset').onclick=()=>{M=LECT.M.map(r=>[...r]);n=LECT.n;sd=LECT.sd;syncSl();render()};
+function render(){const S=stats();drawPlot();drawTables(S);if(!drag)drawTasks(S);else{/* update status live while dragging */const t=T[cur];const lis=$$('#task .conds li');t.c.forEach(([f],i)=>{const ok=f(S);if(lis[i]){lis[i].className=ok?'ok':'no';lis[i].querySelector('.ic').textContent=ok?'✓':'✗'}})}}
+syncSl();render();
+})();
+</script>
+
+</body>
+</html>

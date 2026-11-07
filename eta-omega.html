@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eta² czy omega²?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Caveat+Brush&display=swap">
+<style>
+/* Layout: lab bench – controls on the left, live ANOVA table + bar comparison + n-curve on the right.
+   One deliberate light look (white sheet, black frames, hard colour shadows) matching the course slides. */
+:root{
+  color-scheme:light;
+  --paper:#ffffff; --ink:#111111; --soft:#555555; --rule:#e6e3ea; --chip:#f4f2f6;
+  --red:#e3201b; --yellow:#ffc21a; --blue:#1f78c8; --green:#22a447; --eta:#e3201b; --omega:#1f78c8;
+  --f-display:"Titan One","Arial Black",Impact,sans-serif;
+  --f-body:"Courier Prime","Courier New",Courier,monospace;
+  --f-hand:"Caveat Brush","Comic Sans MS",cursive;
+  --f-table:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:1320px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+.eyebrow{font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:.75em;color:var(--soft)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,5vw,58px);line-height:1.02;margin:6px 0 0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:400;font-size:clamp(22px,2.4vw,28px);margin:0;line-height:1.1}
+p{margin:0;max-width:68ch}
+.lead{font-size:1.05em}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:28px;align-items:start}
+.grid>*{min-width:0}
+.box{border:3px solid var(--ink);padding:18px;background:var(--paper);display:flex;flex-direction:column;gap:14px}
+.sh-y{box-shadow:7px 7px 0 var(--yellow)}.sh-r{box-shadow:7px 7px 0 var(--red)}.sh-b{box-shadow:7px 7px 0 var(--blue)}.sh-g{box-shadow:7px 7px 0 var(--green)}
+.col{display:flex;flex-direction:column;gap:22px;min-width:0}
+.btn{font:inherit;font-weight:700;cursor:pointer;border:3px solid var(--ink);background:var(--paper);color:var(--ink);padding:.3em .7em;box-shadow:3px 3px 0 var(--ink)}
+.btn:hover{background:#fff7da}.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.sel{background:var(--ink);color:var(--paper)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cells{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}
+.cells .h{font-weight:700;font-size:.85em;text-align:center;background:var(--red);color:#fff;padding:.25em .3em}
+.cells .rh{font-weight:700;font-size:.85em;background:var(--red);color:#fff;padding:.25em .4em}
+.cells input{font:inherit;font-weight:700;font-size:1.15em;width:100%;border:3px solid var(--ink);padding:.15em .3em;text-align:center;background:#fffbe6;color:var(--ink)}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.sl label{font-weight:700}
+.sl output{font-family:var(--f-display);font-size:1.3em;min-width:3.2em;text-align:right}
+.sl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--red)}
+.hint{font-size:.85em;color:var(--soft)}
+/* jamovi table */
+.jt{font-family:var(--f-table);background:#fff;color:#333;border:1px solid #e3e3e3;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:12px 18px 10px;overflow-x:auto}
+.jt .tt{font-size:.95em;margin-bottom:4px}
+.jt table{border-collapse:collapse;font-size:.88em;font-variant-numeric:tabular-nums;min-width:640px;width:100%}
+.jt th{font-weight:400;text-align:right;padding:.32em .7em;border-top:1.5px solid #333;border-bottom:1px solid #333;white-space:nowrap}
+.jt th:first-child,.jt td:first-child{text-align:left}
+.jt td{text-align:right;padding:.28em .7em;white-space:nowrap}
+.jt tbody tr:last-child td{border-bottom:1.5px solid #333}
+.jt th.e,.jt td.e{color:var(--eta);font-weight:700}
+.jt th.o,.jt td.o{color:var(--omega);font-weight:700}
+.jt td.neg{color:#999;font-weight:400}
+.jt tr.cur td{background:#fff3c4}
+/* bars */
+.bars{display:flex;flex-direction:column;gap:16px}
+.bgroup{display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:4px 12px;align-items:center}
+.bgroup .name{font-weight:700;grid-row:span 4;align-self:center;cursor:pointer;border:3px solid transparent;padding:.1em .3em}
+.bgroup .name.sel{border-color:var(--ink);background:#fff7da;color:var(--ink)}
+.bar{position:relative;height:24px;background:var(--chip)}
+.bar i{position:absolute;left:0;top:0;bottom:0;transition:width .35s ease}
+.bar b{position:absolute;right:6px;top:0;line-height:24px;font-size:.85em;font-weight:700}
+.bar.e i{background:var(--eta)}.bar.o i{background:var(--omega)}
+.bar.ep i{background:repeating-linear-gradient(135deg,var(--eta) 0 6px,#f6a5a2 6px 12px)}.bar.op i{background:repeating-linear-gradient(135deg,var(--omega) 0 6px,#a8cdee 6px 12px)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85em}
+.legend span::before{content:"";display:inline-block;width:1.4em;height:.8em;vertical-align:-1px;margin-right:.4em;background:var(--c)}
+.formula{font-size:1em;line-height:1.75}
+.formula .big{font-family:var(--f-display);font-size:1.25em}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .3em;line-height:1.3}
+.fr span:first-child{border-bottom:2px solid var(--ink);padding:0 .3em}
+.fr span:last-child{padding:0 .3em}
+.e-c{color:var(--eta);font-weight:700}.o-c{color:var(--omega);font-weight:700}
+.diff{font-family:var(--f-display);font-size:2em;line-height:1}
+.diff small{display:block;font-family:var(--f-body);font-size:.42em;color:var(--soft);margin-top:4px}
+svg text{font-family:var(--f-body);fill:var(--ink)}
+.take{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.take .box{gap:6px}
+.take h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.15em}
+.note{border-left:6px solid var(--yellow);padding:.4em .8em;background:#fffbe6;font-size:.92em}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}.take{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+</head>
+<body>
+<main class="wrap">
+ <header>
+  <div class="eyebrow">Zaawansowana analiza statystyczna · narzędzie</div>
+  <h1>Eta² czy omega²?</h1>
+  <p class="lead" style="margin-top:10px">Zmieniaj średnie, rozrzut i liczebność grup w schemacie 2×2 (muzyka × sposób nauki). Obie miary wielkości efektu liczą się na tych samych danych, więc od razu widać, o ile <span class="e-c">η²</span> przeszacowuje efekt w porównaniu z <span class="o-c">ω²</span>.</p>
+ </header>
+
+ <div class="grid">
+  <div class="col">
+   <section class="box sh-y" aria-labelledby="h-data">
+    <h2 id="h-data">Dane</h2>
+    <div class="row" id="presets">
+     <button class="btn sel" type="button" data-p="lecture">Dane z ćwiczeń</button>
+     <button class="btn" type="button" data-p="small">Mała próba</button>
+     <button class="btn" type="button" data-p="big">Duża próba</button>
+     <button class="btn" type="button" data-p="none">Brak efektu</button>
+     <button class="btn" type="button" data-p="noisy">Duży rozrzut</button>
+    </div>
+    <div>
+     <div style="font-weight:700;margin-bottom:6px">Średnie w grupach</div>
+     <div class="cells">
+      <span></span><span class="h">Brak muzyki</span><span class="h">Głośna muzyka</span>
+      <span class="rh">Regularna</span><input id="m00" type="number" step="0.1" aria-label="Średnia: regularna nauka, brak muzyki"><input id="m01" type="number" step="0.1" aria-label="Średnia: regularna nauka, głośna muzyka">
+      <span class="rh">Intensywna</span><input id="m10" type="number" step="0.1" aria-label="Średnia: intensywna nauka, brak muzyki"><input id="m11" type="number" step="0.1" aria-label="Średnia: intensywna nauka, głośna muzyka">
+     </div>
+    </div>
+    <div class="sl"><label for="sd">Odchylenie standardowe w grupach (SD)</label><output id="sdO"></output><input id="sd" type="range" min="0.5" max="25" step="0.1"></div>
+    <div class="sl"><label for="n">Liczba osób w każdej grupie (n)</label><output id="nO"></output><input id="n" type="range" min="2" max="150" step="1"></div>
+    <p class="hint" id="nN"></p>
+   </section>
+
+   <section class="box sh-b" aria-labelledby="h-f">
+    <h2 id="h-f">Wzory na żywo</h2>
+    <p class="hint">Dla efektu: <b id="fName"></b> (kliknij nazwę efektu przy słupkach, żeby zmienić)</p>
+    <div class="formula" id="formulas"></div>
+   </section>
+  </div>
+
+  <div class="col">
+   <section class="jt" aria-label="Tabela ANOVA z miarami wielkości efektu">
+    <div class="tt">ANOVA - wyniki z egzaminu</div>
+    <table><thead><tr><th></th><th>Suma kwadratów</th><th>df</th><th>Średni kwadrat</th><th>F</th><th>p</th><th class="e">η²</th><th class="e">η²<sub>p</sub></th><th class="o">ω²</th><th class="o">ω²<sub>p</sub></th></tr></thead>
+    <tbody id="tab"></tbody></table>
+   </section>
+
+   <section class="box sh-r" aria-labelledby="h-b">
+    <div class="row" style="justify-content:space-between"><h2 id="h-b">Ten sam efekt, różne miary</h2>
+     <label class="row" style="font-weight:700;gap:6px"><input type="checkbox" id="partial"> pokaż wersje cząstkowe</label></div>
+    <div class="legend" id="legend"></div>
+    <div class="bars" id="bars"></div>
+    <div class="row" style="gap:30px;align-items:flex-end" id="diffs"></div>
+   </section>
+
+   <section class="box sh-g" aria-labelledby="h-n">
+    <h2 id="h-n">Co się dzieje, gdy rośnie liczba osób?</h2>
+    <p class="hint">Średnie i SD zostają takie, jak ustawiłeś. Zmienia się tylko n. Pionowa linia to Twoje obecne n.</p>
+    <svg id="curve" viewBox="0 0 760 320" style="width:100%;height:auto" role="img" aria-label="Wykres η² i ω² w zależności od liczebności grup"></svg>
+   </section>
+  </div>
+ </div>
+
+ <section class="take" aria-label="Najważniejsze wnioski">
+  <div class="box sh-y"><h3>η² opisuje próbę</h3><p>Mówi, jaki procent zmienności wyników <b>w tej próbie</b> przypada na efekt. Zawiera też część przypadkowego szumu, więc <b>przeszacowuje</b> efekt w populacji.</p></div>
+  <div class="box sh-b"><h3>ω² szacuje populację</h3><p>Odejmuje od efektu tyle, ile dałby sam przypadek (<b>df<sub>efektu</sub> × MS<sub>błędu</sub></b>). Jest więc zawsze <b>mniejsza</b> niż η², ale mniej obciążona.</p></div>
+  <div class="box sh-r"><h3>Kiedy różnica jest duża?</h3><p>Przy <b>małych próbach</b> i <b>słabych efektach</b>. Przy dużych próbach obie miary są prawie równe. Gdy ω² wychodzi ujemna, raportujemy <b>0</b>.</p></div>
+ </section>
+</main>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+/* ---- F distribution ---- */
+function lgamma(z){const c=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(z<0.5)return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*z)))-lgamma(1-z);z-=1;let x=0.99999999999980993;for(let i=0;i<8;i++)x+=c[i]/(z+i+1);const t=z+7.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x)}
+function betacf(a,b,x){let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;
+  for(let m=1;m<=300;m++){const m2=2*m;let aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<3e-12)break}return h}
+function ibeta(x,a,b){if(x<=0)return 0;if(x>=1)return 1;const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b}
+const fP=(F,d1,d2)=>!(F>0)?1:1-ibeta(d1*F/(d1*F+d2),d1/2,d2/2);
+/* ---- state ---- */
+const PRE={lecture:{m:[84,73.2,74.2,72.7],sd:5.4,n:6},small:{m:[84,73.2,74.2,72.7],sd:5.4,n:3},big:{m:[84,73.2,74.2,72.7],sd:5.4,n:100},none:{m:[76,75.5,75.8,76.2],sd:5.4,n:6},noisy:{m:[84,73.2,74.2,72.7],sd:18,n:6}};
+let S={m:[...PRE.lecture.m],sd:PRE.lecture.sd,n:PRE.lecture.n},cur='A';
+const EF={A:'muzyka',B:'sposób nauki',AB:'muzyka ✻ sposób nauki'};
+function anova(m,sd,n){const [a,b,c,d]=m;/* a=reg/brak b=reg/gł c=int/brak d=int/gł */
+  const G=(a+b+c+d)/4,mBrak=(a+c)/2,mGl=(b+d)/2,mReg=(a+b)/2,mInt=(c+d)/2;
+  const SSA=2*n*((mBrak-G)**2+(mGl-G)**2),SSB=2*n*((mReg-G)**2+(mInt-G)**2);
+  const r=a-mReg-mBrak+G,SSAB=4*n*r*r,dfE=4*(n-1),SSE=dfE*sd*sd,MSE=SSE/dfE,SST=SSA+SSB+SSAB+SSE,N=4*n;
+  const out={};[['A',SSA],['B',SSB],['AB',SSAB]].forEach(([k,ss])=>{const F=ss/MSE;
+    out[k]={ss,df:1,ms:ss,F,p:fP(F,1,dfE),eta:ss/SST,etap:ss/(ss+SSE),om:(ss-MSE)/(SST+MSE),omp:(ss-MSE)/(ss+(N-1)*MSE)}});
+  return {E:out,SSE,dfE,MSE,SST,N}}
+const f3=x=>(Math.round(x*1000)/1000).toFixed(3),pc=x=>String(+(x).toFixed(3)).replace('.',','),c2=x=>x.toFixed(2).replace('.',',');
+const fmtSS=x=>x>=100?x.toFixed(0):x.toFixed(1),fp=p=>p<.001?'< .001':p.toFixed(3);
+function nlabel(n){return n===1?'osoba':(n%10>=2&&n%10<=4&&(n%100<10||n%100>20))?'osoby':'osób'}
+/* ---- render ---- */
+function render(){
+  const R=anova(S.m,S.sd,S.n);
+  $('#sdO').textContent=S.sd.toFixed(1).replace('.',',');$('#nO').textContent=S.n;
+  $('#nN').textContent='Razem N = '+R.N+' '+nlabel(R.N)+' (4 grupy po '+S.n+').';
+  let h='';
+  ['A','B','AB'].forEach(k=>{const e=R.E[k];const om=v=>'<td class="o'+(v<0?' neg':'')+'">'+(v<0?f3(v):f3(v))+'</td>';
+    h+='<tr class="'+(k===cur?'cur':'')+'"><td>'+EF[k]+'</td><td>'+fmtSS(e.ss)+'</td><td>1</td><td>'+e.ms.toFixed(1)+'</td><td>'+e.F.toFixed(2)+'</td><td>'+fp(e.p)+'</td><td class="e">'+f3(e.eta)+'</td><td class="e">'+f3(e.etap)+'</td>'+om(e.om)+om(e.omp)+'</tr>'});
+  h+='<tr><td>Reszty</td><td>'+fmtSS(R.SSE)+'</td><td>'+R.dfE+'</td><td>'+R.MSE.toFixed(1)+'</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+  $('#tab').innerHTML=h;
+  const part=$('#partial').checked;
+  $('#legend').innerHTML='<span style="--c:var(--eta)">η²</span><span style="--c:var(--omega)">ω²</span>'+(part?'<span style="--c:repeating-linear-gradient(135deg,var(--eta) 0 4px,#f6a5a2 4px 8px)">η²<sub>p</sub></span><span style="--c:repeating-linear-gradient(135deg,var(--omega) 0 4px,#a8cdee 4px 8px)">ω²<sub>p</sub></span>':'');
+  const mx=Math.max(.05,...['A','B','AB'].map(k=>part?R.E[k].etap:R.E[k].eta))*1.08;
+  const bar=(cls,v,lab)=>'<div class="bar '+cls+'" title="'+lab+'"><i style="width:'+Math.max(0,v)/mx*100+'%"></i><b>'+lab+' = '+(v<0?pc(v)+' → 0':pc(v))+'</b></div>';
+  $('#bars').innerHTML=['A','B','AB'].map(k=>{const e=R.E[k];
+    return '<div class="bgroup"><button type="button" class="name btn'+(k===cur?' sel':'')+'" data-k="'+k+'" style="box-shadow:none">'+EF[k]+'</button>'+bar('e',e.eta,'η²')+bar('o',e.om,'ω²')+(part?bar('ep',e.etap,'η²p')+bar('op',e.omp,'ω²p'):'')+'</div>'}).join('');
+  $$('#bars .name').forEach(b=>b.onclick=()=>{cur=b.dataset.k;render()});
+  const e=R.E[cur];const d=e.eta-Math.max(0,e.om);
+  $('#diffs').innerHTML='<div class="diff">'+pc(d)+'<small>o tyle η² jest większa od ω² (efekt: '+EF[cur]+')</small></div>'+
+    (e.om>0?'<div class="diff">'+(e.eta/e.om).toFixed(2).replace('.',',')+'×<small>tyle razy η² przewyższa ω²</small></div>':'<div class="diff" style="color:var(--omega)">ω² &lt; 0<small>efekt mniejszy niż sam przypadek: raportujemy ω² = 0</small></div>');
+  $('#fName').textContent=EF[cur];
+  $('#formulas').innerHTML=
+    '<div><span class="e-c big">η²</span> = <span class="fr"><span>SS<sub>efektu</sub></span><span>SS<sub>ogółem</sub></span></span> = <span class="fr"><span>'+fmtSS(e.ss)+'</span><span>'+fmtSS(R.SST)+'</span></span> = <b class="e-c">'+pc(e.eta)+'</b></div>'+
+    '<div><span class="o-c big">ω²</span> = <span class="fr"><span>SS<sub>efektu</sub> − df<sub>efektu</sub>·MS<sub>błędu</sub></span><span>SS<sub>ogółem</sub> + MS<sub>błędu</sub></span></span> = <span class="fr"><span>'+fmtSS(e.ss)+' − 1·'+R.MSE.toFixed(1)+'</span><span>'+fmtSS(R.SST)+' + '+R.MSE.toFixed(1)+'</span></span> = <b class="o-c">'+pc(e.om)+'</b></div>'+
+    '<p class="hint" style="margin-top:6px">ω² odejmuje w liczniku <b>'+R.MSE.toFixed(1)+'</b>, czyli tyle zmienności, ile średnio daje sam przypadek. To właśnie ta „poprawka” robi różnicę.</p>';
+  drawCurve();
+}
+function drawCurve(){const svg=$('#curve');svg.innerHTML='';const NS='http://www.w3.org/2000/svg';
+  const el=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e};
+  const x0=60,x1=610,y0=260,y1=18,nmin=2,nmax=150;const ns=[];for(let n=nmin;n<=nmax;n++)ns.push(n);
+  const vals=ns.map(n=>{const e=anova(S.m,S.sd,n).E[cur];return [e.eta,Math.max(0,e.om)]});
+  const mx=Math.max(.05,...vals.map(v=>v[0]))*1.1;const sx=n=>x0+(Math.log(n)-Math.log(nmin))/(Math.log(nmax)-Math.log(nmin))*(x1-x0),sy=v=>y0-v/mx*(y0-y1);
+  const step=mx>.5?.2:mx>.2?.1:mx>.1?.05:.02;
+  for(let t=0;t<=mx+1e-9;t+=step){el('line',{x1:x0,x2:x1,y1:sy(t),y2:sy(t),stroke:'#e6e3ea'});el('text',{x:x0-8,y:sy(t)+5,'text-anchor':'end','font-size':14},String(+t.toFixed(2)).replace('.',','))}
+  [2,5,10,20,50,100,150].forEach(n=>{el('line',{x1:sx(n),x2:sx(n),y1:y0,y2:y0+6,stroke:'#111','stroke-width':2});el('text',{x:sx(n),y:y0+24,'text-anchor':'middle','font-size':14},n)});
+  el('line',{x1:x0,x2:x1,y1:y0,y2:y0,stroke:'#111','stroke-width':2.5});el('line',{x1:x0,x2:x0,y1:y1,y2:y0,stroke:'#111','stroke-width':2.5});
+  el('text',{x:(x0+x1)/2,y:y0+40,'text-anchor':'middle','font-size':14},'liczba osób w grupie (n), skala logarytmiczna');
+  let dA='',dE='',dO='';ns.forEach((n,i)=>{dE+=(i?'L':'M')+sx(n).toFixed(1)+' '+sy(vals[i][0]).toFixed(1);dO+=(i?'L':'M')+sx(n).toFixed(1)+' '+sy(vals[i][1]).toFixed(1)});
+  ns.slice().reverse().forEach((n,i)=>{});
+  let area='M'+sx(nmin)+' '+sy(vals[0][0]);ns.forEach((n,i)=>area+='L'+sx(n).toFixed(1)+' '+sy(vals[i][0]).toFixed(1));for(let i=ns.length-1;i>=0;i--)area+='L'+sx(ns[i]).toFixed(1)+' '+sy(vals[i][1]).toFixed(1);area+='Z';
+  el('path',{d:area,fill:'#ffc21a',opacity:.35});
+  el('path',{d:dE,fill:'none',stroke:'#e3201b','stroke-width':4});el('path',{d:dO,fill:'none',stroke:'#1f78c8','stroke-width':4});
+  const xc=sx(S.n);el('line',{x1:xc,x2:xc,y1:y1,y2:y0,stroke:'#111','stroke-width':2,'stroke-dasharray':'6 5'});
+  const ci=S.n-nmin;el('circle',{cx:xc,cy:sy(vals[ci][0]),r:7,fill:'#e3201b',stroke:'#111','stroke-width':2});el('circle',{cx:xc,cy:sy(vals[ci][1]),r:7,fill:'#1f78c8',stroke:'#111','stroke-width':2});
+  el('text',{x:x1+12,y:sy(vals[vals.length-1][0])-4,'font-size':16,'font-weight':700,fill:'#e3201b'},'η²');el('text',{x:x1+12,y:sy(vals[vals.length-1][1])+16,'font-size':16,'font-weight':700,fill:'#1f78c8'},'ω²');
+  el('text',{x:x1+12,y:y1+14,'font-size':13,fill:'#555'},'żółte pole =');el('text',{x:x1+12,y:y1+30,'font-size':13,fill:'#555'},'przeszacowanie');
+}
+/* ---- wiring ---- */
+function sync(){['m00','m01','m10','m11'].forEach((id,i)=>$('#'+id).value=S.m[i]);$('#sd').value=S.sd;$('#n').value=S.n;render()}
+['m00','m01','m10','m11'].forEach((id,i)=>$('#'+id).addEventListener('input',e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(!isNaN(v)){S.m[i]=v;$$('#presets .btn').forEach(b=>b.classList.remove('sel'));render()}}));
+$('#sd').addEventListener('input',e=>{S.sd=+e.target.value;$$('#presets .btn').forEach(b=>b.classList.remove('sel'));render()});
+$('#n').addEventListener('input',e=>{S.n=+e.target.value;$$('#presets .btn').forEach(b=>b.classList.remove('sel'));render()});
+$('#partial').addEventListener('change',render);
+$$('#presets .btn').forEach(b=>b.onclick=()=>{const p=PRE[b.dataset.p];S={m:[...p.m],sd:p.sd,n:p.n};$$('#presets .btn').forEach(x=>x.classList.toggle('sel',x===b));sync()});
+sync();
+})();
+</script>
+
+</body>
+</html>
