@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eta² a eta² cząstkowe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Caveat+Brush&display=swap">
+<style>
+/* Layout: controls + small interaction plot on the left; on the right the "pie" of SS as one long bar,
+   then the two fractions (η² and η²p) built from that same bar, then the Jamovi table with sums.
+   Single deliberate light look matching the course slides. */
+:root{
+  color-scheme:light;
+  --paper:#ffffff; --ink:#111111; --soft:#555555; --chip:#f4f2f6;
+  --red:#e3201b; --yellow:#ffc21a; --blue:#1f78c8; --green:#22a447;
+  --cA:#e3201b; --cB:#1f78c8; --cAB:#8e44ad; --cE:#b9b9b9;
+  --f-display:"Titan One","Arial Black",Impact,sans-serif;
+  --f-body:"Courier Prime","Courier New",Courier,monospace;
+  --f-hand:"Caveat Brush","Comic Sans MS",cursive;
+  --f-table:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:1320px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+.eyebrow{font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:.75em;color:var(--soft)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(32px,5vw,56px);line-height:1.02;margin:6px 0 0}
+h2{font-family:var(--f-display);font-weight:400;font-size:clamp(20px,2.2vw,26px);margin:0;line-height:1.1}
+h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.15em}
+p{margin:0;max-width:72ch}
+.grid{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:28px;align-items:start}
+.grid>*{min-width:0}
+.col{display:flex;flex-direction:column;gap:22px;min-width:0}
+.box{border:3px solid var(--ink);padding:18px;background:var(--paper);display:flex;flex-direction:column;gap:14px}
+.sh-y{box-shadow:7px 7px 0 var(--yellow)}.sh-r{box-shadow:7px 7px 0 var(--red)}.sh-b{box-shadow:7px 7px 0 var(--blue)}.sh-g{box-shadow:7px 7px 0 var(--green)}
+.btn{font:inherit;font-weight:700;cursor:pointer;border:3px solid var(--ink);background:var(--paper);color:var(--ink);padding:.3em .7em;box-shadow:3px 3px 0 var(--ink)}
+.btn:hover{background:#fff7da}.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.sel{background:var(--ink);color:var(--paper)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hint{font-size:.85em;color:var(--soft)}
+.cells{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}
+.cells .h{font-weight:700;font-size:.85em;text-align:center;background:var(--red);color:#fff;padding:.25em .3em}
+.cells .rh{font-weight:700;font-size:.85em;background:var(--red);color:#fff;padding:.25em .4em}
+.cells input{font:inherit;font-weight:700;font-size:1.1em;width:100%;border:3px solid var(--ink);padding:.15em .3em;text-align:center;background:#fffbe6;color:var(--ink)}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.sl label{font-weight:700}
+.sl output{font-family:var(--f-display);font-size:1.25em;min-width:3em;text-align:right}
+.sl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--cB)}
+.sl.main{border:3px dashed var(--cB);padding:10px 12px}
+#plot{width:100%;height:auto}
+#plot text{font-family:var(--f-body);fill:var(--ink)}
+/* SS bar */
+.ssbar{display:flex;height:56px;border:3px solid var(--ink);overflow:hidden}
+.ssbar div{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85em;white-space:nowrap;overflow:hidden;transition:flex-grow .35s ease,opacity .3s}
+.ssbar .E{color:var(--ink)}
+.ssbar .off{opacity:.18}
+.leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85em}
+.leg span::before{content:"";display:inline-block;width:1em;height:1em;vertical-align:-2px;margin-right:.4em;background:var(--c);border:2px solid var(--ink)}
+.frac{display:grid;grid-template-columns:7.5em minmax(0,1fr) 5.2em;gap:10px;align-items:center}
+.frac .lab{font-family:var(--f-display);font-size:1.6em;line-height:1}
+.frac .lab small{display:block;font-family:var(--f-body);font-size:.42em;color:var(--soft);margin-top:4px}
+.frac .val{font-family:var(--f-display);font-size:1.8em;text-align:right}
+.mini{display:flex;height:34px;border:3px solid var(--ink);overflow:hidden}
+.mini div{transition:flex-grow .35s ease}
+.why{font-size:.95em;line-height:1.6}
+.why b.A{color:var(--cA)}.why b.B{color:var(--cB)}.why b.AB{color:var(--cAB)}
+/* table */
+.jt{font-family:var(--f-table);background:#fff;color:#333;border:1px solid #e3e3e3;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:12px 18px 10px;overflow-x:auto}
+.jt .tt{font-size:.95em;margin-bottom:4px}
+.jt table{border-collapse:collapse;font-size:.9em;font-variant-numeric:tabular-nums;width:100%;min-width:560px}
+.jt th{font-weight:400;text-align:right;padding:.32em .7em;border-top:1.5px solid #333;border-bottom:1px solid #333;white-space:nowrap}
+.jt th:first-child,.jt td:first-child{text-align:left}
+.jt td{text-align:right;padding:.28em .7em;white-space:nowrap}
+.jt tr.sum td{border-top:1px solid #333;font-weight:700}
+.jt tbody tr:last-child td{border-bottom:1.5px solid #333}
+.jt td.big{font-weight:700}
+.jt td.warn{color:var(--red)}
+.jt tr.cur td{background:#fff3c4}
+.take{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.take .box{gap:6px}
+@media (max-width:980px){.grid,.take{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.frac{grid-template-columns:5em minmax(0,1fr) 4.4em}}
+</style>
+
+</head>
+<body>
+<main class="wrap">
+ <header>
+  <div class="eyebrow">Zaawansowana analiza statystyczna · narzędzie</div>
+  <h1>Eta² a eta² cząstkowe</h1>
+  <p style="margin-top:10px">W dwuczynnikowej ANOVIE zmienność wyników dzieli się na <b>cztery części</b>: efekt muzyki, efekt sposobu nauki, interakcję i resztę (błąd). Zwykła <b>η²</b> dzieli efekt przez <b>całość</b>. Cząstkowa <b>η²<sub>p</sub></b> dzieli go tylko przez <b>efekt + błąd</b>, pomijając pozostałe efekty. Przesuń suwak sposobu nauki i zobacz, co się dzieje z η² muzyki.</p>
+ </header>
+
+ <div class="grid">
+  <div class="col">
+   <section class="box sh-y" aria-labelledby="h-d">
+    <h2 id="h-d">Dane</h2>
+    <div class="row" id="presets">
+     <button class="btn sel" type="button" data-p="cw">Dane z ćwiczeń</button>
+     <button class="btn" type="button" data-p="only">Tylko muzyka</button>
+     <button class="btn" type="button" data-p="strong">Silny drugi czynnik</button>
+     <button class="btn" type="button" data-p="all">Wszystko silne</button>
+    </div>
+    <div class="sl main"><label for="shift">Przesuń linię „intensywna nauka” (siła efektu sposobu nauki)</label><output id="shiftO"></output><input id="shift" type="range" min="-25" max="25" step="0.5" value="0"></div>
+    <svg id="plot" viewBox="0 0 420 280" role="img" aria-label="Wykres średnich: wynik z egzaminu według muzyki i sposobu nauki"></svg>
+    <div>
+     <div style="font-weight:700;margin-bottom:6px">Średnie w grupach</div>
+     <div class="cells">
+      <span></span><span class="h">Brak muzyki</span><span class="h">Głośna muzyka</span>
+      <span class="rh">Regularna</span><input id="m00" type="number" step="0.1" aria-label="Średnia: regularna nauka, brak muzyki"><input id="m01" type="number" step="0.1" aria-label="Średnia: regularna nauka, głośna muzyka">
+      <span class="rh">Intensywna</span><input id="m10" type="number" step="0.1" aria-label="Średnia: intensywna nauka, brak muzyki"><input id="m11" type="number" step="0.1" aria-label="Średnia: intensywna nauka, głośna muzyka">
+     </div>
+    </div>
+    <div class="sl"><label for="sd">SD w grupach</label><output id="sdO"></output><input id="sd" type="range" min="1" max="20" step="0.1"></div>
+    <div class="sl"><label for="n">Osób w grupie (n)</label><output id="nO"></output><input id="n" type="range" min="3" max="60" step="1"></div>
+   </section>
+  </div>
+
+  <div class="col">
+   <section class="box sh-r" aria-labelledby="h-ss">
+    <div class="row" style="justify-content:space-between">
+     <h2 id="h-ss">Skąd się biorą obie miary?</h2>
+     <div class="row" id="pick">
+      <button class="btn sel" type="button" data-k="A">muzyka</button>
+      <button class="btn" type="button" data-k="B">sposób nauki</button>
+      <button class="btn" type="button" data-k="AB">interakcja</button>
+     </div>
+    </div>
+    <div>
+     <div style="font-weight:700;margin-bottom:6px">Cała zmienność wyników (SS ogółem = <span id="sst"></span>)</div>
+     <div class="ssbar" id="ssbar"></div>
+     <div class="leg" style="margin-top:8px"><span style="--c:var(--cA)">muzyka</span><span style="--c:var(--cB)">sposób nauki</span><span style="--c:var(--cAB)">interakcja</span><span style="--c:var(--cE)">reszta (błąd)</span></div>
+    </div>
+    <div class="frac"><div class="lab" style="color:var(--red)">η²<small>efekt / całość</small></div><div class="mini" id="fEta"></div><div class="val" id="vEta"></div></div>
+    <div class="frac"><div class="lab" style="color:var(--blue)">η²<sub>p</sub><small>efekt / (efekt + błąd)</small></div><div class="mini" id="fEtap"></div><div class="val" id="vEtap"></div></div>
+    <p class="why" id="why"></p>
+   </section>
+
+   <section class="jt" aria-label="Tabela ANOVA z η² i η² cząstkowym">
+    <div class="tt">ANOVA - wyniki z egzaminu</div>
+    <table><thead><tr><th></th><th>Suma kwadratów</th><th>df</th><th>F</th><th>p</th><th>η²</th><th>η²<sub>p</sub></th></tr></thead><tbody id="tab"></tbody></table>
+   </section>
+  </div>
+ </div>
+
+ <section class="take" aria-label="Najważniejsze wnioski">
+  <div class="box sh-y"><h3>η² to kawałek całego tortu</h3><p>Wszystkie η² (razem z błędem) sumują się do <b>1</b>. Gdy drugi czynnik jest silny, zabiera dużą część tortu i η² muzyki <b>maleje</b>, choć sama muzyka działa tak samo.</p></div>
+  <div class="box sh-b"><h3>η²<sub>p</sub> pomija inne efekty</h3><p>Liczy efekt tylko względem błędu. Nie zależy od tego, jak silne są pozostałe czynniki, więc lepiej nadaje się do porównań z badaniami, w których był <b>tylko jeden czynnik</b>. Suma η²<sub>p</sub> może przekroczyć 1.</p></div>
+  <div class="box sh-r"><h3>Co raportować?</h3><p>Jamovi i SPSS w ANOVIE wieloczynnikowej podają zwykle <b>η²<sub>p</sub></b>. W raporcie zawsze pisz, <b>którą miarę</b> podajesz: η² i η²<sub>p</sub> dla tego samego efektu mogą się bardzo różnić.</p></div>
+ </section>
+</main>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function lgamma(z){const c=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(z<0.5)return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*z)))-lgamma(1-z);z-=1;let x=0.99999999999980993;for(let i=0;i<8;i++)x+=c[i]/(z+i+1);const t=z+7.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x)}
+function betacf(a,b,x){let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;
+  for(let m=1;m<=300;m++){const m2=2*m;let aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<3e-12)break}return h}
+function ibeta(x,a,b){if(x<=0)return 0;if(x>=1)return 1;const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b}
+const fP=(F,d1,d2)=>!(F>0)?1:1-ibeta(d1*F/(d1*F+d2),d1/2,d2/2);
+/* base[line][x]: line 0 regularna, 1 intensywna; x 0 brak muzyki, 1 głośna; shift is added to line 1 */
+const PRE={cw:{base:[[84,73.2],[74.2,72.7]],sd:5.4,n:6},only:{base:[[80,72],[80,72]],sd:6,n:10},strong:{base:[[80,72],[80,72]],sd:6,n:10,shift:-20},all:{base:[[84,66],[60,58]],sd:5,n:10}};
+let base,shift=0,sd,n,cur='A';
+const NAME={A:'muzyka',B:'sposób nauki',AB:'muzyka ✻ sposób nauki'},COL={A:'var(--cA)',B:'var(--cB)',AB:'var(--cAB)',E:'var(--cE)'};
+const M=()=>[[base[0][0],base[0][1]],[base[1][0]+shift,base[1][1]+shift]];
+function anova(){const [[a,b],[c,d]]=M();const G=(a+b+c+d)/4,mx=[(a+c)/2,(b+d)/2],ml=[(a+b)/2,(c+d)/2];
+  const dfE=4*(n-1),SSE=dfE*sd*sd,MSE=sd*sd;
+  const SS={A:2*n*((mx[0]-G)**2+(mx[1]-G)**2),B:2*n*((ml[0]-G)**2+(ml[1]-G)**2),AB:4*n*(a-ml[0]-mx[0]+G)**2,E:SSE};
+  const T=SS.A+SS.B+SS.AB+SS.E;const R={SS,T,dfE,MSE};
+  ['A','B','AB'].forEach(k=>{const F=SS[k]/MSE;R[k]={F,p:fP(F,1,dfE),eta:SS[k]/T,etap:SS[k]/(SS[k]+SSE)}});return R}
+const pc=x=>x.toFixed(3).replace('.',','),pl=x=>String(+x.toFixed(1)).replace('.',','),fp=p=>p<.001?'< .001':p.toFixed(3);
+function seg(k,v,lab,off){return '<div class="'+k+(off?' off':'')+'" style="flex:'+Math.max(v,1e-9)+' 1 0;background:'+COL[k]+'" title="'+lab+'">'+lab+'</div>'}
+function plot(){const svg=$('#plot');svg.innerHTML='';const NS='http://www.w3.org/2000/svg';const el=(t,a,x)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(x!=null)e.textContent=x;svg.appendChild(e);return e};
+  const m=M(),all=m.flat();let lo=Math.floor((Math.min(...all)-5)/10)*10,hi=Math.ceil((Math.max(...all)+5)/10)*10;if(hi-lo<20)hi=lo+20;
+  const x0=52,x1=300,y0=236,y1=14,sy=v=>y0-(v-lo)/(hi-lo)*(y0-y1),XS=[x0+60,x1-50];
+  for(let t=lo;t<=hi;t+=10){el('line',{x1:x0,x2:x1,y1:sy(t),y2:sy(t),stroke:'#e6e3ea'});el('text',{x:x0-8,y:sy(t)+5,'text-anchor':'end','font-size':13},t)}
+  el('line',{x1:x0,x2:x1,y1:y0,y2:y0,stroke:'#111','stroke-width':2.5});el('line',{x1:x0,x2:x0,y1:y1,y2:y0,stroke:'#111','stroke-width':2.5});
+  ['brak muzyki','głośna muzyka'].forEach((l,i)=>el('text',{x:XS[i],y:y0+22,'text-anchor':'middle','font-size':14,'font-weight':700},l));
+  const C=['#1f78c8','#22a447'];
+  m.forEach((r,k)=>{el('line',{x1:XS[0],x2:XS[1],y1:sy(r[0]),y2:sy(r[1]),stroke:C[k],'stroke-width':k?7:6,'stroke-dasharray':k?'':'','stroke-linecap':'round'});
+    r.forEach((v,i)=>k?el('rect',{x:XS[i]-9,y:sy(v)-9,width:18,height:18,fill:C[k],stroke:'#111','stroke-width':2.5}):el('circle',{cx:XS[i],cy:sy(v),r:9,fill:C[k],stroke:'#111','stroke-width':2.5}))});
+  el('circle',{cx:x1+20,cy:y1+20,r:7,fill:C[0],stroke:'#111','stroke-width':2});el('text',{x:x1+32,y:y1+25,'font-size':13},'regularna');
+  el('rect',{x:x1+13,y:y1+42,width:14,height:14,fill:C[1],stroke:'#111','stroke-width':2});el('text',{x:x1+32,y:y1+54,'font-size':13},'intensywna')}
+function render(){
+  const R=anova(),S=R.SS;
+  $('#shiftO').textContent=(shift>0?'+':'')+pl(shift);$('#sdO').textContent=pl(sd);$('#nO').textContent=n;
+  const m=M();['m00','m01','m10','m11'].forEach((id,i)=>{const e=$('#'+id);if(document.activeElement!==e)e.value=+m[i>>1][i&1].toFixed(1)});
+  $('#sst').textContent=pl(R.T);
+  const lab=k=>({A:'muzyka',B:'nauka',AB:'interakcja',E:'reszta'})[k]+' '+Math.round(S[k]/R.T*100)+'%';
+  $('#ssbar').innerHTML=['A','B','AB','E'].map(k=>seg(k,S[k],lab(k))).join('');
+  const e=R[cur];
+  $('#fEta').innerHTML=['A','B','AB','E'].map(k=>'<div style="flex:'+Math.max(S[k],1e-9)+' 1 0;background:'+(k===cur?COL[k]:'#ededed')+'"></div>').join('');
+  $('#fEtap').innerHTML=[cur,'E'].map(k=>'<div style="flex:'+Math.max(S[k],1e-9)+' 1 0;background:'+(k===cur?COL[k]:'#ededed')+'"></div>').join('');
+  $('#vEta').textContent=pc(e.eta);$('#vEtap').textContent=pc(e.etap);
+  $('#vEta').style.color='var(--red)';$('#vEtap').style.color='var(--blue)';
+  const others=['A','B','AB'].filter(k=>k!==cur),oSS=others.reduce((s,k)=>s+S[k],0),share=oSS/R.T;
+  $('#why').innerHTML='Licznik jest ten sam: <b class="'+cur+'">SS '+NAME[cur]+' = '+pl(S[cur])+'</b>. Różni się mianownik. η² dzieli przez całą zmienność ('+pl(R.T)+'), a η²<sub>p</sub> tylko przez efekt + błąd ('+pl(S[cur]+S.E)+'). '+
+    (share<.02?'Pozostałe efekty są tu prawie zerowe, więc obie miary są niemal równe.':'Pozostałe efekty ('+others.filter(k=>S[k]/R.T>.01).map(k=>'<b class="'+k+'">'+NAME[k]+'</b>').join(' i ')+') zajmują <b>'+Math.round(share*100)+'%</b> całej zmienności i tylko one „zaniżają” η².');
+  let h='';['A','B','AB'].forEach(k=>{const x=R[k];h+='<tr class="'+(k===cur?'cur':'')+'"><td>'+NAME[k]+'</td><td>'+S[k].toFixed(1)+'</td><td>1</td><td>'+x.F.toFixed(2)+'</td><td>'+fp(x.p)+'</td><td>'+x.eta.toFixed(3)+'</td><td>'+x.etap.toFixed(3)+'</td></tr>'});
+  const se=['A','B','AB'].reduce((s,k)=>s+R[k].eta,0),sp=['A','B','AB'].reduce((s,k)=>s+R[k].etap,0);
+  h+='<tr><td>Reszty</td><td>'+S.E.toFixed(1)+'</td><td>'+R.dfE+'</td><td></td><td></td><td>'+(S.E/R.T).toFixed(3)+'</td><td></td></tr>';
+  h+='<tr class="sum"><td>Suma</td><td>'+R.T.toFixed(1)+'</td><td>'+(R.dfE+3)+'</td><td></td><td></td><td class="big">'+(se+S.E/R.T).toFixed(3)+'</td><td class="big'+(sp>1?' warn':'')+'">'+sp.toFixed(3)+(sp>1?' &gt; 1!':'')+'</td></tr>';
+  $('#tab').innerHTML=h;plot()}
+function load(k){const p=PRE[k];base=p.base.map(r=>[...r]);shift=p.shift||0;sd=p.sd;n=p.n;$('#shift').value=shift;$('#sd').value=sd;$('#n').value=n;$$('#presets .btn').forEach(b=>b.classList.toggle('sel',b.dataset.p===k));render()}
+const unsel=()=>$$('#presets .btn').forEach(b=>b.classList.remove('sel'));
+$('#shift').addEventListener('input',e=>{shift=+e.target.value;unsel();render()});
+$('#sd').addEventListener('input',e=>{sd=+e.target.value;unsel();render()});
+$('#n').addEventListener('input',e=>{n=+e.target.value;unsel();render()});
+['m00','m01','m10','m11'].forEach((id,i)=>$('#'+id).addEventListener('input',e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(isNaN(v))return;const r=i>>1,c=i&1;base[r][c]=r?v-shift:v;unsel();render()}));
+$$('#pick .btn').forEach(b=>b.onclick=()=>{cur=b.dataset.k;$$('#pick .btn').forEach(x=>x.classList.toggle('sel',x===b));render()});
+$$('#presets .btn').forEach(b=>b.onclick=()=>load(b.dataset.p));
+load('cw');
+})();
+</script>
+
+</body>
+</html>
