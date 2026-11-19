@@ -588,6 +588,24 @@ html:not(.static) .static-only{display:none!important}
  </div></div>
 </section>
 
+<!-- 12b -->
+<section class="slide" data-title="Rozumowanie w 4 krokach">
+ <div class="inner">
+  <h2>Po co sprawdzamy założenia na próbie?</h2>
+  <div class="steps" style="font-size:1.02em;gap:.7em">
+   <div><span class="hand">1</span> Bierzemy <b>próbę</b> i sprawdzamy, czy wyniki mają rozkład normalny – osobno w każdej grupie albo na resztach (wynik minus średnia grupy).</div>
+   <div><span class="hand">2</span> Na tej podstawie wnioskujemy, czy <b>populacja</b>, z której pochodzi próba, ma rozkład normalny.</div>
+   <div><span class="hand">3</span> Jeśli tak, populacja wygląda tak, jak zakłada <b>wzór na rozkład zerowy</b> (krzywą t lub F). H<sub>0</sub> dotyczy tylko średnich, więc w świecie bez różnicy kształt populacji jest ten sam.</div>
+   <div><span class="hand">4</span> Możemy więc porównać naszą statystykę z <b>krzywą ze wzoru</b>, a wartość p będzie poprawna.</div>
+  </div>
+  <div class="cards3">
+   <div class="box s-yellow" style="font-size:.85em"><b>Nie tylko kształt.</b> Wzór zakłada też <b>równe wariancje</b> (test Levene'a) i <b>niezależne obserwacje</b> (plan badania).</div>
+   <div class="box s-blue" style="font-size:.85em"><b>Duże, równe grupy.</b> Krok 3 nie musi być spełniony idealnie: dzięki CTG statystyka i tak zachowuje się prawie jak krzywa.</div>
+  </div>
+  <p class="box s-red" style="font-size:.95em;max-width:none">Sprawdzamy na próbie, czy populacja wygląda tak, jak zakłada wzór na rozkład zerowy. Jeśli tak, możemy z tego wzoru liczyć p.</p>
+ </div>
+</section>
+
 <!-- 13 -->
 <section class="slide" data-title="Laboratorium założeń">
  <div class="inner">
@@ -868,7 +886,7 @@ html:not(.static) .static-only{display:none!important}
  <div class="inner">
   <h2>Obalamy główne mity o wyborze testów</h2>
   <div class="cards3">
-   <div class="box s-red myth"><q>Test Levene'a jest istotny, więc muszę zrobić test nieparametryczny.</q><span><span class="tag-no">NIEPRAWDA</span> Gdy wariancje są nierówne, wykonujemy <b>test Welcha</b>. Test nieparametryczny tu nie pomaga: przy nierównych wariancjach i grupach też myli się kilka razy częściej, niż powinien (slajd 18).</span></div>
+   <div class="box s-red myth"><q>Test Levene'a jest istotny, więc muszę zrobić test nieparametryczny.</q><span><span class="tag-no">NIEPRAWDA</span> Gdy wariancje są nierówne, wykonujemy <b>test Welcha</b>. Test nieparametryczny tu nie pomaga: przy nierównych wariancjach i grupach też myli się kilka razy częściej, niż powinien (slajd 19).</span></div>
    <div class="box s-red myth"><q>Mój rozkład nie jest normalny, więc muszę zrobić test nieparametryczny.</q><span><span class="tag-no">NIEPRAWDA</span> Test t i ANOVA opierają się na rozkładzie <b>średnich</b>, a nie pojedynczych wyników. Przy większych próbach (mniej więcej od 30 osób w grupie) rozkład średnich jest bliski normalnemu (CTG). Test Shapiro-Wilka ma znaczenie głównie przy małych próbach.</span></div>
    <div class="box s-blue myth"><q>Testy nieparametryczne są zawsze bezpieczniejsze.</q><span><span class="tag-no">NIEPRAWDA</span> One też mają rozkład zerowy i własne założenia (np. podobny kształt rozkładów w grupach). Przy danych normalnych mają nieco mniejszą moc. Przewagę mają przy wartościach odstających i grubych ogonach.</span></div>
   </div>
