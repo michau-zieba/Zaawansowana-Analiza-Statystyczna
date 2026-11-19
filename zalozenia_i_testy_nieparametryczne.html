@@ -618,16 +618,17 @@ html:not(.static) .static-only{display:none!important}
   <h2>Dlaczego skośność często nie szkodzi?</h2>
   <div class="lab">
    <div class="ctrl">
-    <p style="font-size:1.05em">Statystyka t porównuje <b>średnie</b>, a nie pojedyncze wyniki. Im większa próba, tym bardziej rozkład średnich przypomina normalny – nawet gdy populacja jest skośna. To <span class="red">centralne twierdzenie graniczne</span> (CTG).</p>
+    <div class="chips" id="cltMode"></div>
+    <p style="font-size:.95em" id="cltTxt"></p>
     <div><b>Populacja</b></div>
     <div class="chips" id="cltPop"></div>
     <svg class="popmini" id="cltMini" viewBox="0 0 300 110" aria-label="Kształt populacji"></svg>
-    <div class="lbl">Liczebność próby (n) <output id="cltNO">5</output></div>
+    <div class="lbl">Liczebność grupy (n) <output id="cltNO">5</output></div>
     <input type="range" id="cltN" min="1" max="100" step="1" value="5" aria-label="Liczebność próby">
-    <div class="mbox"><span>skośność rozkładu średnich</span><span class="big" id="cltSk">–</span></div>
+    <div class="mbox"><span id="cltSkL">skośność rozkładu średnich</span><span class="big" id="cltSk">–</span></div>
    </div>
    <div><svg class="plot" id="cltPlot" viewBox="0 0 760 430" role="img" aria-label="Rozkład średnich z prób"></svg>
-    <div class="legend"><span><i style="background:#f5c86a"></i>średnie z 5000 prób</span><span><i class="ln"></i>rozkład normalny</span></div></div>
+    <div class="legend"><span><i style="background:#f5c86a"></i><span id="cltLeg">średnie z 5000 prób</span></span><span><i class="ln"></i>rozkład normalny</span></div></div>
   </div>
  </div>
 </section>
@@ -1339,11 +1340,19 @@ onEnter(slideNo('#p12'),()=>{const r=RNG(12);const T=[];let out=0;const cr=tCrit
   byId('p12t').innerHTML=`Przykład: grupy liczą 10 i 40 osób, a wariancja mniejszej grupy jest 9 razy większa. Według wzorca poza granicami istotności powinno być <b>5%</b> wyników. Naprawdę jest ich <b class="red">${pl(100*out/20000,1)}%</b>.`});
 
 /* ---------- 16. CTG ---------- */
-(function(){let pop='exp';const s=sliderSync('cltN','cltNO');
-  function draw(){const n=+s.value,r=RNG(16+n);const P=POPS[pop].draw;const M=[];for(let k=0;k<5000;k++){let m=0;for(let i=0;i<n;i++)m+=P(r);M.push(m/Math.sqrt(n))}
+(function(){let pop='exp',mode='one';const s=sliderSync('cltN','cltNO');
+  const TX={one:'Statystyka t opiera się na <b>średnich</b>, a nie na pojedynczych wynikach. Im większa próba, tym bardziej rozkład średnich przypomina normalny – nawet gdy populacja jest skośna. To <span class="red">centralne twierdzenie graniczne</span> (CTG).',
+   diff:'W teście t liczy się <b>różnica średnich</b> dwóch grup. Gdy grupy są równe i pochodzą z tak samo skośnej populacji, skośność obu średnich się <span class="red">znosi</span>: różnica ma rozkład symetryczny nawet przy małych próbach. Dlatego test t przy równych grupach dobrze znosi skośność.',
+   diffU:'Gdy grupy są <b>nierówne</b> (tu n i 4n osób), skośność się nie znosi. Rozkład różnicy średnich potrzebuje wtedy większych prób, żeby stać się normalny.'};
+  const LAB={one:['średnia z próby (wystandaryzowana)','średnie z 5000 prób','skośność rozkładu średnich'],diff:['różnica średnich (wystandaryzowana)','różnice średnich z 5000 badań','skośność rozkładu różnic średnich'],diffU:['różnica średnich (wystandaryzowana)','różnice średnich z 5000 badań','skośność rozkładu różnic średnich']};
+  function mean(P,r,n){let m=0;for(let i=0;i<n;i++)m+=P(r);return m/n}
+  function draw(){const n=+s.value,r=RNG(16+n);const P=POPS[pop].draw;const M=[];
+    for(let k=0;k<5000;k++){if(mode==='one')M.push(mean(P,r,n)*Math.sqrt(n));else{const nB=mode==='diff'?n:4*n;M.push((mean(P,r,n)-mean(P,r,nB))/Math.sqrt(1/n+1/nB))}}
     popMini(byId('cltMini'),pop);const h=histo(M,-4,6,0.2);let mx=0.42;h.dens.forEach(d=>mx=Math.max(mx,d));
-    plot(byId('cltPlot'),{xmin:-4,xmax:6,ymax:Math.min(mx,1.2),hist:h,xticks:tickRange(-4,6,1),xlab:'średnia z próby (wystandaryzowana)',curves:[{f:nPdf}],texts:[{x:740,y:44,anchor:'end',s:'n = '+n,color:C.blue,fs:28}]});
-    const sk=skewness(M);byId('cltSk').textContent=pl(sk,2);byId('cltSk').style.color=Math.abs(sk)<0.3?C.green:(Math.abs(sk)<0.7?'#b88600':C.red)}
+    plot(byId('cltPlot'),{xmin:-4,xmax:6,ymax:Math.min(mx,1.2),hist:h,xticks:tickRange(-4,6,1),xlab:LAB[mode][0],curves:[{f:nPdf}],texts:[{x:740,y:44,anchor:'end',s:mode==='diffU'?`n = ${n} i ${4*n}`:'n = '+n,color:C.blue,fs:28}]});
+    byId('cltTxt').innerHTML=TX[mode];byId('cltLeg').textContent=LAB[mode][1];byId('cltSkL').textContent=LAB[mode][2];
+    const sk=skewness(M);byId('cltSk').textContent=pl(sk,2).replace('-','−');byId('cltSk').style.color=Math.abs(sk)<0.3?C.green:(Math.abs(sk)<0.7?'#b88600':C.red)}
+  chips(byId('cltMode'),[['one','średnia z jednej grupy'],['diff','różnica średnich: równe grupy'],['diffU','różnica średnich: nierówne grupy']],mode,k=>{mode=k;draw()});
   chips(byId('cltPop'),['skew','exp','logn','unif','bimod'].map(k=>[k,POPS[k].name]),pop,k=>{pop=k;draw()});
   let d;s.addEventListener('input',()=>{clearTimeout(d);d=setTimeout(draw,60)});onEnter(slideNo('#cltPlot'),draw)})();
 
