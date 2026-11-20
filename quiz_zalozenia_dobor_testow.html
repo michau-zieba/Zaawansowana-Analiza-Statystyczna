@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quiz: założenia i dobór testu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titan+One&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Caveat+Brush&display=swap">
+<style>
+:root{--paper:#fff;--ink:#111;--soft:#5d5a63;--line:#e6e3ea;--red:#e3201b;--yellow:#ffc21a;--blue:#1f78c8;--green:#22a447;
+  --yellowBg:#fff6d6;--blueBg:#e6f1fb;--redBg:#fde6e5;--greenBg:#e5f6ea;
+  --f-display:"Titan One","Arial Black",Impact,sans-serif;--f-body:"Courier Prime","Courier New",Courier,monospace;--f-hand:"Caveat Brush","Comic Sans MS",cursive;color-scheme:light}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:26px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;line-height:1.1;text-wrap:balance}
+h1{font-size:clamp(1.8rem,4.5vw,2.8rem)}h2{font-size:1.35rem}
+p{margin:0}
+.eyebrow{font-weight:700;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.btn{background:var(--paper);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:.3em .75em;font:inherit;font-weight:700;cursor:pointer;color:inherit;transition:transform .08s,box-shadow .08s;text-decoration:none;display:inline-block}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end;border-bottom:6px solid var(--ink);padding-bottom:18px}
+header.top .credit{text-align:right;font-size:.9rem}
+header.top .credit b{display:inline-block;border-bottom:5px solid var(--yellow);line-height:1.1}
+.intro{border:3px solid var(--ink);box-shadow:6px 6px 0 var(--yellow);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.intro ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px}
+.status{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:3px solid var(--ink);padding:8px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.status .score{font-family:var(--f-display);font-size:1.3rem}
+.bar{flex:1;min-width:140px;height:14px;border:2px solid var(--ink);display:flex}
+.bar i{flex:1;border-right:1px solid var(--ink)}.bar i:last-child{border-right:0}
+.bar i.ok{background:var(--green)}.bar i.no{background:var(--red)}
+.q{border:3px solid var(--ink);padding:16px;display:flex;flex-direction:column;gap:12px;scroll-margin-top:60px}
+.q.done-ok{box-shadow:7px 7px 0 var(--green)}.q.done-no{box-shadow:7px 7px 0 var(--red)}
+.q .head{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.q .num{font-family:var(--f-hand);font-size:2rem;line-height:1;color:var(--red)}
+.tag{font-size:.75rem;font-weight:700;border:2px solid var(--ink);padding:0 .45em;text-transform:uppercase;letter-spacing:.06em}
+.vars{display:flex;flex-wrap:wrap;gap:6px}
+.vars code{font-family:var(--f-body);font-weight:700;background:var(--blueBg);border:2px solid var(--blue);padding:0 .4em;font-size:.9rem}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.opt{all:unset;cursor:pointer;border:3px solid var(--ink);padding:.5em .7em;display:flex;gap:.6em;align-items:baseline;font-weight:700;background:var(--paper);box-shadow:3px 3px 0 var(--ink)}
+.opt:hover{background:var(--yellowBg)}
+.opt:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.opt b{font-family:var(--f-display);font-weight:400;font-size:1.15rem;color:var(--red)}
+.opt.ok{background:var(--green);color:#fff;border-color:var(--green)}.opt.ok b{color:#fff}
+.opt.no{background:var(--red);color:#fff;border-color:var(--red)}.opt.no b{color:#fff}
+.opt[disabled]{cursor:default}
+.hintbtn{all:unset;cursor:pointer;font-size:.85rem;text-decoration:underline;color:var(--soft);align-self:flex-start}
+.hint{font-size:.88rem;background:var(--yellowBg);border-left:5px solid var(--yellow);padding:8px 10px}
+.fb{display:flex;flex-direction:column;gap:8px;font-size:.92rem;border-left:6px solid var(--ink);padding:8px 12px}
+.fb.ok{border-color:var(--green);background:var(--greenBg)}.fb.no{border-color:var(--red);background:var(--redBg)}
+.fb .verdict{font-family:var(--f-display);font-size:1.1rem}
+.fb table{border-collapse:collapse;font-size:.85rem;width:100%;max-width:560px}
+.fb td{padding:.15em .5em;border-bottom:1px solid rgba(0,0,0,.12);vertical-align:top}
+.fb td:first-child{font-weight:700;white-space:nowrap}
+.path{background:var(--blueBg);border-bottom:2px solid var(--blue);padding:0 .2em}
+.end{border:3px solid var(--ink);box-shadow:7px 7px 0 var(--blue);padding:16px;display:none;flex-direction:column;gap:10px}
+.end.show{display:flex}
+.end .big{font-family:var(--f-display);font-size:2.4rem;line-height:1}
+.sum{border:3px solid var(--ink);box-shadow:6px 6px 0 var(--blue);padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.steps3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.steps3 div{border:2px solid var(--ink);padding:8px 10px;font-size:.9rem;background:var(--yellowBg)}
+.steps3 b.n{font-family:var(--f-hand);font-size:1.5rem;color:var(--red);margin-right:4px}
+.tw{overflow-x:auto}
+table.sm{border-collapse:collapse;width:100%;min-width:640px;font-size:.86rem}
+table.sm th,table.sm td{border:1px solid var(--line);padding:.45em .55em;text-align:left;vertical-align:top}
+table.sm thead th{background:var(--ink);color:#fff;font-family:var(--f-display);font-weight:400}
+table.sm tbody th{background:var(--blueBg);white-space:nowrap}
+table.sm td.ok{background:var(--greenBg)}table.sm td.bad{background:var(--redBg)}
+footer{border-top:3px solid var(--ink);padding-top:12px;font-size:.85rem;color:var(--soft)}
+@media (max-width:560px){header.top{grid-template-columns:1fr}header.top .credit{text-align:left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+ <div style="display:flex;flex-direction:column;gap:8px">
+  <div class="eyebrow">Zaawansowana analiza statystyczna</div>
+  <h1>Założenia i dobór testów do hipotezy</h1>
+  <p>11 pytań, za każdą poprawną odpowiedź 1 punkt</p>
+ </div>
+ <div class="credit"><b>mgr Michał Zięba</b><br>USWPS Poznań – materiały dydaktyczne</div>
+</header>
+
+<section class="intro" aria-label="Instrukcja">
+ <h2>Jak rozwiązywać?</h2>
+ <ol>
+  <li>Pobierz bazę i otwórz ją w Jamovi.</li>
+  <li>Przy każdym pytaniu oceń <b>charakter zmiennych</b>: czy wynik jest ilościowy, czy to ocena na skali (porządkowa)? Czy grupy są niezależne, czy to te same osoby?</li>
+  <li>Sprawdź założenia: <b>normalność</b> (Shapiro-Wilk, histogram), <b>równość wariancji</b> (Levene), przy pomiarze powtarzanym <b>sferyczność</b> (Mauchly).</li>
+  <li>Wybierz test. Po kliknięciu zobaczysz, czy odpowiedź jest poprawna, i wyniki, które powinny Ci wyjść.</li>
+ </ol>
+ <div class="row"><a class="btn" id="dl" download="BAZA_PSYCHOLOGIA_ZALOZENIA.omv" href="#">Pobierz bazę (.omv)</a><span style="font-size:.85rem;color:var(--soft)">120 osób, 30 zmiennych</span></div>
+</section>
+
+
+<section class="sum" aria-labelledby="sumH">
+ <h2 id="sumH">Podsumowanie: od danych do testu</h2>
+ <div class="steps3">
+  <div><b class="n">1</b><b>Poziom pomiaru.</b> Wynik to ocena na krótkiej skali (np. 1–7)? To zmienna porządkowa, więc od razu test nieparametryczny.</div>
+  <div><b class="n">2</b><b>Schemat.</b> Różne osoby w grupach (niezależne) czy te same osoby mierzone kilka razy (pomiar powtarzany)? Jeden czynnik czy dwa?</div>
+  <div><b class="n">3</b><b>Założenia.</b> Normalność (jeden czynnik: Shapiro-Wilk w każdej grupie; dwa czynniki: wykres Q-Q reszt), równość wariancji (Levene), przy pomiarze powtarzanym sferyczność (Mauchly).</div>
+ </div>
+ <div class="tw"><table class="sm">
+  <thead><tr><th>Sytuacja</th><th>Co sprawdzić</th><th>Założenia spełnione</th><th>Nierówne wariancje / złamana sferyczność</th><th>Skala porządkowa, silna skośność, wartości odstające</th></tr></thead>
+  <tbody>
+   <tr><th>2 grupy niezależne</th><td>normalność: test Shapiro-Wilka osobno w każdej grupie i histogram; równość wariancji: Levene</td><td class="ok">test t dla prób niezależnych</td><td class="bad">test t z poprawką Welcha</td><td class="bad">test U Manna–Whitneya</td></tr>
+   <tr><th>3+ grupy niezależne</th><td>normalność: test Shapiro-Wilka osobno w każdej grupie i histogram; równość wariancji: Levene</td><td class="ok">jednoczynnikowa ANOVA</td><td class="bad">ANOVA z poprawką Welcha</td><td class="bad">test Kruskala–Wallisa</td></tr>
+   <tr><th>te same osoby, 3+ pomiary</th><td>normalność: test Shapiro-Wilka osobno w każdym pomiarze (Eksploracja) i histogram; sferyczność: Mauchly</td><td class="ok">ANOVA z powtarzanym pomiarem</td><td class="bad">poprawka Greenhouse–Geissera</td><td class="bad">test Friedmana</td></tr>
+   <tr><th>2 czynniki międzyobiektowe</th><td>normalność: wykres Q-Q reszt (ANOVA → Sprawdzanie założeń); równość wariancji: Levene</td><td class="ok">dwuczynnikowa ANOVA międzyobiektowa</td><td>przy równych grupach odporna; opisz ograniczenie</td><td>brak prostego odpowiednika</td></tr>
+   <tr><th>schemat mieszany: grupy × pomiary</th><td>normalność: wykres Q-Q reszt (ANOVA z powtarzanym pomiarem → Sprawdzanie założeń); równość wariancji: Levene w każdym pomiarze; sferyczność: Mauchly</td><td class="ok">dwuczynnikowa ANOVA w schemacie mieszanym</td><td class="bad">poprawka Greenhouse–Geissera</td><td>brak prostego odpowiednika</td></tr>
+  </tbody></table></div>
+ <p style="font-size:.85rem;color:var(--soft)">Przy jednym czynniku normalność sprawdzamy testem Shapiro-Wilka osobno w każdej grupie (lub pomiarze). Przy dwóch czynnikach komórek jest dużo, więc oglądamy wykres Q-Q reszt (wynik minus średnia komórki): gdy punkty leżą blisko prostej, normalność jest spełniona. Przy dużych grupach (od ok. 30 osób) Shapiro-Wilk wykrywa nawet drobne odstępstwa, więc zawsze obejrzyj też histogram. Same nierówne wariancje to sygnał do testu Welcha, a nie do testu nieparametrycznego.</p>
+</section>
+
+<div class="status" aria-live="polite"><span class="score" id="score">0 / 11</span><div class="bar" id="bar"></div><button class="btn" type="button" id="reset">Od nowa</button></div>
+
+<div id="qs" style="display:flex;flex-direction:column;gap:22px"></div>
+
+<section class="end" id="end" aria-live="polite"><div class="eyebrow">Wynik</div><div class="big" id="endScore"></div><p id="endTxt"></p></section>
+
+<footer>mgr Michał Zięba, USWPS Poznań – materiały dydaktyczne</footer>
+</div>
+<script>
+(function(){
+const OMV='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';
+const byId=id=>document.getElementById(id);
+try{const bin=atob(OMV);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);byId('dl').href=URL.createObjectURL(new Blob([u],{type:'application/octet-stream'}))}catch(e){byId('dl').href='data:application/octet-stream;base64,'+OMV}
+
+const T2=['Test t dla prób niezależnych','Test t z poprawką Welcha','Test U Manna–Whitneya','Jednoczynnikowa ANOVA'];
+const Q=[
+ {tag:'2 grupy',txt:'W badaniu sprawdzono, czy rodzaj krótkiego ćwiczenia (trening uważności albo relaksacja mięśni) wpływa na poziom lęku-stanu mierzonego kwestionariuszem STAI (20–80 punktów). Każdy uczestnik wykonał jedno ćwiczenie.',vars:['cwiczenie','lek_stan'],
+  opts:T2,ans:0,hint:'Dwie niezależne grupy, wynik ilościowy. Sprawdź Shapiro-Wilka i test Levene\'a.',
+  res:[['Zmienna zależna','ilościowa (wynik STAI)'],['Normalność','spełniona – Shapiro-Wilk w grupach p ≈ 0,77 i 0,82'],['Wariancje','równe – Levene p ≈ 0,37 (SD 7,7 i 8,6)']],
+  why:'Założenia są spełnione, więc wystarczy klasyczny test t. Test Welcha też dałby poprawny wynik, ale nie jest tu potrzebny.',path:'Analizy → Testy t → Test t dla prób niezależnych → Założenia: test jednorodności, test normalności'},
+ {tag:'2 grupy',txt:'Porównano samoocenę (skala 0–100 punktów) u osób uczestniczących w terapii indywidualnej i w terapii grupowej.',vars:['forma_terapii','samoocena'],
+  opts:T2,ans:1,hint:'Porównaj SD w obu grupach i spójrz na test Levene\'a.',
+  res:[['Zmienna zależna','ilościowa'],['Normalność','spełniona – Shapiro-Wilk w grupach p ≈ 0,30 i 0,53'],['Wariancje','nierówne – Levene p < 0,001 (SD 5,0 i 12,3)']],
+  why:'Rozkłady są normalne, ale wariancje wyraźnie się różnią. Dlatego test t z poprawką Welcha.',path:'Testy t → Test t dla prób niezależnych → zaznacz „Welcha”'},
+ {tag:'2 grupy',txt:'Uczestnicy dostali informację zwrotną o wykonanym zadaniu – pochwałę albo krytykę – a następnie ocenili swoje zadowolenie z wykonania zadania na skali od 1 do 7.',vars:['feedback','zadowolenie'],
+  opts:T2,ans:2,hint:'Zobacz, jakie wartości przyjmuje zmienna zadowolenie. To wynik testu czy ocena na skali?',
+  res:[['Zmienna zależna','ocena na skali 1–7 – tylko 7 możliwych wartości, czyli zmienna porządkowa (w bazie oznaczona jako ciągła – trzeba to zauważyć!)'],['Normalność','niespełniona – Shapiro-Wilk p < 0,001 i p ≈ 0,008'],['Wariancje','Levene p ≈ 0,26']],
+  why:'Zadowolenie to ocena na skali porządkowej, a rozkłady nie są normalne. Najlepszy jest test U Manna–Whitneya.',path:'Testy t → Test t dla prób niezależnych → zaznacz „U Manna-Whitneya”'},
+ {tag:'3 grupy',txt:'Porównano liczbę zapamiętanych słów (0–60) u studentów uczących się trzema strategiami: powtarzanie, mapy myśli i fiszki.',vars:['strategia','zapamietane_slowa'],
+  opts:['Jednoczynnikowa ANOVA','Jednoczynnikowa ANOVA z poprawką Welcha','Test Kruskala–Wallisa','Test Friedmana'],ans:0,hint:'Ile jest grup? Czy to te same osoby? Potem normalność i Levene.',
+  res:[['Schemat','3 niezależne grupy'],['Normalność','spełniona – Shapiro-Wilk w grupach p ≈ 0,37–0,72'],['Wariancje','równe – Levene p ≈ 0,72']],
+  why:'Wszystkie założenia są spełnione, więc klasyczna jednoczynnikowa ANOVA (post hoc Tukey). Test Friedmana dotyczy pomiaru powtarzanego, a tu każda osoba jest w jednej grupie.',path:'Analizy → ANOVA → ANOVA jednoczynnikowa → Sprawdzanie założeń'},
+ {tag:'3 grupy',txt:'Porównano dobrostan psychiczny (skala WEMWBS, 14–70 punktów) u osób bez wsparcia, ze wsparciem psychologicznym online i ze wsparciem stacjonarnym.',vars:['wsparcie','dobrostan'],
+  opts:['Klasyczna jednoczynnikowa ANOVA','Jednoczynnikowa ANOVA z poprawką Welcha','Test Kruskala–Wallisa','Test U Manna–Whitneya'],ans:1,hint:'Porównaj odchylenia standardowe w trzech grupach.',
+  res:[['Schemat','3 niezależne grupy'],['Normalność','spełniona – Shapiro-Wilk w grupach p ≈ 0,31–0,57'],['Wariancje','nierówne – Levene p < 0,001 (SD 4,8; 7,4; 11,3)']],
+  why:'Rozkłady są normalne, ale wariancje bardzo się różnią. Dlatego ANOVA z poprawką Welcha (post hoc Games-Howell). Test U porównuje tylko dwie grupy.',path:'ANOVA jednoczynnikowa → zaznacz „Welcha”'},
+ {tag:'3 grupy',txt:'Porównano nasilenie objawów depresyjnych (BDI-II, 0–63 punkty) u osób pracujących zdalnie, hybrydowo i stacjonarnie.',vars:['tryb_pracy','objawy_depresji'],
+  opts:['Klasyczna ANOVA','ANOVA z poprawką Welcha','Test Kruskala–Wallisa','Test Friedmana'],ans:2,hint:'Obejrzyj histogramy i wykresy skrzynkowe w grupach. Co z kształtem rozkładu?',
+  res:[['Schemat','3 niezależne grupy'],['Normalność','niespełniona – Shapiro-Wilk p < 0,001 w każdej grupie; silna prawoskośność (SKE ≈ 1,6–2,0) i wartości odstające w każdej grupie'],['Wariancje','równe – Levene p ≈ 0,92']],
+  why:'Problemem jest kształt rozkładu (silna skośność i wartości odstające), a nie wariancje, więc test Welcha nie pomoże. Wybieramy test Kruskala–Wallisa (porównania parami DSCF).',path:'Analizy → ANOVA → Nieparametryczne → ANOVA jednoczynnikowa (Kruskal-Wallis)'},
+ {tag:'pomiar powtarzany',txt:'Mierzono lęk przed wystąpieniem publicznym (10–50 punktów) u tych samych osób trzy razy: przed wystąpieniem, w jego trakcie i po nim.',vars:['lek_przed','lek_w_trakcie','lek_po'],
+  opts:['Jednoczynnikowa ANOVA z powtarzanym pomiarem','ANOVA z powtarzanym pomiarem z poprawką Greenhouse–Geissera','Test Friedmana','Klasyczna jednoczynnikowa ANOVA międzyosobowa'],ans:0,hint:'Te same osoby, 3 pomiary. Sprawdź test sferyczności.',
+  res:[['Schemat','te same osoby, 3 pomiary'],['Normalność','spełniona – Shapiro-Wilk w pomiarach p ≈ 0,21–0,51'],['Sferyczność','spełniona – Mauchly p ≈ 0,75 (ε G-G ≈ 0,99)']],
+  why:'Sferyczność jest spełniona, więc wystarczy zwykła ANOVA z powtarzanym pomiarem. Poprawka G-G nie jest potrzebna.',path:'Analizy → ANOVA → ANOVA z powtarzanym pomiarem → Sprawdzanie założeń → Testy sferyczności'},
+ {tag:'pomiar powtarzany',txt:'Te same osoby wykonały test Stroopa w czterech kolejnych blokach. Dla każdego bloku zapisano średni czas reakcji (w milisekundach).',vars:['stroop_b1','stroop_b2','stroop_b3','stroop_b4'],
+  opts:['Jednoczynnikowa ANOVA z powtarzanym pomiarem','ANOVA z powtarzanym pomiarem z poprawką Greenhouse–Geissera','Test Friedmana','Test Kruskala–Wallisa'],ans:1,hint:'Cztery pomiary tych samych osób – co mówi test Mauchly\'ego?',
+  res:[['Schemat','te same osoby, 4 pomiary'],['Normalność','spełniona – Shapiro-Wilk p ≈ 0,25–0,83'],['Sferyczność','złamana – Mauchly p < 0,001 (ε G-G ≈ 0,50)']],
+  why:'Rozkłady są normalne, ale sferyczność jest wyraźnie złamana (rozrzut czasów rośnie w ostatnim bloku). Odczytujemy wynik z poprawką Greenhouse–Geissera.',path:'ANOVA z powtarzanym pomiarem → Sprawdzanie założeń → Poprawki sferyczności → Greenhouse-Geisser'},
+ {tag:'pomiar powtarzany',txt:'Uczestnicy oceniali swój nastrój na skali od 1 do 7 trzy razy w ciągu dnia: rano, w południe i wieczorem.',vars:['nastroj_rano','nastroj_poludnie','nastroj_wieczor'],
+  opts:['Jednoczynnikowa ANOVA z powtarzanym pomiarem','ANOVA z poprawką Greenhouse–Geissera','Test Friedmana','Jednoczynnikowa ANOVA międzyosobowa'],ans:2,hint:'Jakie wartości przyjmuje nastrój? Jaki to poziom pomiaru?',
+  res:[['Zmienna zależna','ocena na skali 1–7 – zmienna porządkowa'],['Normalność','niespełniona – Shapiro-Wilk p < 0,001 we wszystkich pomiarach'],['Sferyczność','Mauchly p ≈ 0,23 – ale przy skali porządkowej to nie rozstrzyga']],
+  why:'Nastrój to ocena na skali porządkowej, więc wybieramy test Friedmana. Spełniona sferyczność nie zmienia poziomu pomiaru.',path:'Analizy → ANOVA → Nieparametryczne → Pomiar powtarzany (Friedman)'},
+ {tag:'2 czynniki',txt:'Sprawdzano, czy forma terapii (indywidualna, grupowa) i nurt terapii (CBT, psychodynamiczny, humanistyczny) wpływają na poprawę stanu pacjentów (spadek objawów w punktach). Każdy pacjent miał jedną formę i jeden nurt. Wybierz test, który zbada wpływ obu czynników i zależności między nimi.',vars:['forma','nurt','poprawa'],
+  opts:['Jednoczynnikowa ANOVA','Dwuczynnikowa ANOVA międzyobiektowa','Dwuczynnikowa ANOVA w schemacie mieszanym','Test Kruskala–Wallisa'],ans:1,hint:'Ile jest czynników? Czy któryś z nich to pomiar powtarzany? Normalność oceń na wykresie Q-Q reszt.',
+  res:[['Schemat','2 czynniki międzyobiektowe: forma (2) × nurt (3); każda osoba w jednej z 6 komórek'],['Normalność','spełniona – na wykresie Q-Q reszt punkty leżą blisko prostej, bez wyraźnych odchyleń na końcach'],['Wariancje','równe – Levene (6 komórek) p ≈ 0,55']],
+  why:'Dwa czynniki międzyobiektowe i pytanie o ich interakcję, przy spełnionych założeniach – dwuczynnikowa ANOVA międzyobiektowa.',path:'Analizy → ANOVA → ANOVA (dwa czynniki stałe) → Sprawdzanie założeń: test jednorodności, wykres Q-Q'},
+ {tag:'2 czynniki',txt:'Sprawdzano skuteczność treningu radzenia sobie ze stresem. Uczestnicy byli w grupie eksperymentalnej albo kontrolnej, a poziom stresu (PSS-10, 0–40 punktów) zmierzono trzy razy: przed treningiem, po nim i miesiąc później. Wybierz test, który zbada wpływ grupy, zmiany w czasie i zależności między nimi.',vars:['grupa','stres_t1','stres_t2','stres_t3'],
+  opts:['Jednoczynnikowa ANOVA z powtarzanym pomiarem','Dwuczynnikowa ANOVA międzyobiektowa','Dwuczynnikowa ANOVA w schemacie mieszanym','Test Kruskala–Wallisa'],ans:2,hint:'Jeden czynnik dzieli osoby na grupy, drugi to kolejne pomiary tych samych osób. Normalność oceń na wykresie Q-Q reszt.',
+  res:[['Schemat','grupa (międzyobiektowy) × 3 pomiary (wewnątrzobiektowy)'],['Normalność','spełniona – na wykresie Q-Q reszt punkty leżą blisko prostej'],['Wariancje','równe w każdym pomiarze – Levene p ≈ 0,64; 0,98; 0,45'],['Sferyczność','złamana – Mauchly p < 0,001 (ε G-G ≈ 0,68)']],
+  why:'Czynnik międzyobiektowy i wewnątrzobiektowy razem to schemat mieszany. Ponieważ sferyczność jest złamana, wyniki odczytujemy z poprawką Greenhouse–Geissera.',path:'Analizy → ANOVA → ANOVA z powtarzanym pomiarem (+ czynnik międzyobiektowy: grupa) → Sprawdzanie założeń: testy sferyczności, test równości wariancji, wykres Q-Q'}];
+
+const st=new Array(Q.length).fill(null);
+function render(){const box=byId('qs');box.innerHTML='';
+  Q.forEach((q,i)=>{const c=document.createElement('article');c.className='q';c.id='q'+(i+1);
+    c.innerHTML=`<div class="head"><span class="num">${i+1}</span><span class="tag">${q.tag}</span></div><p>${q.txt}</p>
+     <div class="vars"><span style="font-size:.85rem;color:var(--soft)">Zmienne:</span>${q.vars.map(v=>`<code>${v}</code>`).join('')}</div>
+     <button class="hintbtn" type="button">Pokaż podpowiedź</button><div class="hint" hidden>${q.hint}</div>
+     <div class="opts">${q.opts.map((o,k)=>`<button class="opt" type="button" data-k="${k}"><b>${'ABCD'[k]}</b><span>${o}</span></button>`).join('')}</div><div class="fbw"></div>`;
+    c.querySelector('.hintbtn').onclick=e=>{const h=c.querySelector('.hint');h.hidden=!h.hidden;e.target.textContent=h.hidden?'Pokaż podpowiedź':'Ukryj podpowiedź'};
+    c.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pick(i,+b.dataset.k));box.appendChild(c)});upd()}
+function pick(i,k){if(st[i]!==null)return;st[i]=k;const q=Q[i],c=byId('q'+(i+1)),ok=k===q.ans;
+  c.querySelectorAll('.opt').forEach(b=>{b.disabled=true;const kk=+b.dataset.k;if(kk===q.ans)b.classList.add('ok');else if(kk===k)b.classList.add('no')});
+  c.classList.add(ok?'done-ok':'done-no');
+  c.querySelector('.fbw').innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="verdict">${ok?'Dobrze!':'Niestety nie.'} Poprawna odpowiedź: ${'ABCD'[q.ans]}</span>
+   <table>${q.res.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table><p>${q.why}</p><p style="font-size:.85rem"><b>W Jamovi:</b> <span class="path">${q.path}</span></p></div>`;
+  upd();const nx=st.indexOf(null);if(nx>=0)setTimeout(()=>{},0)}
+function upd(){const done=st.filter(v=>v!==null).length,good=st.filter((v,i)=>v===Q[i].ans).length;
+  byId('score').textContent=`${good} / ${Q.length}`;byId('bar').innerHTML=st.map((v,i)=>`<i class="${v===null?'':(v===Q[i].ans?'ok':'no')}" title="Pytanie ${i+1}"></i>`).join('');
+  const end=byId('end');if(done===Q.length){end.classList.add('show');byId('endScore').textContent=`${good} / ${Q.length} pkt`;
+    byId('endTxt').textContent=good>=10?'Świetnie! Bezbłędnie dobierasz testy do danych.':good>=7?'Dobrze! Przejrzyj wyjaśnienia przy błędnych odpowiedziach.':'Warto wrócić do założeń: poziom pomiaru, normalność, Levene i Mauchly. Przeczytaj wyjaśnienia przy każdym pytaniu.'}else end.classList.remove('show')}
+byId('reset').onclick=()=>{st.fill(null);render();window.scrollTo({top:0,behavior:'smooth'})};
+render();
+})();
+
+</script>
+</body>
+</html>
