@@ -503,20 +503,29 @@ html:not(.static) .static-only{display:none!important}
 </section>
 
 <!-- 12b -->
-<section class="slide" data-title="Rozumowanie w 4 krokach">
+<section class="slide" data-title="Świat H0">
  <div class="inner">
-  <h2>Po co sprawdzamy założenia na próbie?</h2>
-  <div class="steps" style="font-size:1.02em;gap:.7em">
-   <div><span class="hand">1</span> Bierzemy <b>próbę</b> i sprawdzamy, czy wyniki mają rozkład normalny – osobno w każdej grupie albo na resztach (wynik minus średnia grupy).</div>
-   <div><span class="hand">2</span> Na tej podstawie wnioskujemy, czy <b>populacja</b>, z której pochodzi próba, ma rozkład normalny.</div>
-   <div><span class="hand">3</span> Jeśli tak, populacja wygląda tak, jak zakłada <b>wzór na rozkład zerowy</b> (krzywą t lub F). H<sub>0</sub> dotyczy tylko średnich, więc w świecie bez różnicy kształt populacji jest ten sam.</div>
-   <div><span class="hand">4</span> Możemy więc porównać naszą statystykę z <b>krzywą ze wzoru</b>, a wartość p będzie poprawna.</div>
+  <h2>Skąd się bierze rozkład zerowy?</h2>
+  <div class="lab" style="grid-template-columns:minmax(15em,.85fr) minmax(0,1.7fr)">
+   <div class="ctrl" style="font-size:.8em">
+    <div><span class="hand">1</span> Nasza próba pochodzi z <b>prawdziwego świata</b> – różnica między grupami może w nim istnieć.</div>
+    <div><span class="hand">2</span> <b>Świat H<sub>0</sub></b> to te same populacje <b>przesunięte</b> tak, żeby miały taką samą średnią – np. 11,75 punktu u kobiet i 11,75 punktu u mężczyzn. Kształt i rozrzut się nie zmieniają.</div>
+    <div><span class="hand">3</span> Rozkład zerowy to wyniki t z losowania w świecie H<sub>0</sub>. Jego kształt zależy od kształtu i rozrzutu populacji – dlatego oceniamy je na próbie.</div>
+    <div class="lbl">Przesuń do świata H<sub>0</sub> <output id="hwO">0%</output></div>
+    <input type="range" id="hwS" min="0" max="1" step="0.02" value="0" aria-label="Przesunięcie do wspólnej średniej">
+    <div><b>Kształt populacji</b></div><div class="chips" id="hwShape"></div>
+    <div><b>Rozrzut i liczebność</b></div><div class="chips" id="hwSpread"></div>
+    <p class="hint">Reszty (wynik minus średnia grupy) robią to samo przesunięcie na naszych danych.</p>
+   </div>
+   <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start">
+    <div><svg class="plot" id="hwPop" viewBox="0 0 520 380" role="img" aria-label="Populacje kobiet i mężczyzn"></svg>
+     <div class="legend"><span><i style="background:#ffb3ad"></i>kobiety</span><span><i style="background:#9cc7ef"></i>mężczyźni</span></div></div>
+    <div><svg class="plot" id="hwNull" viewBox="0 0 520 380" role="img" aria-label="Rozkład zerowy zbudowany ze świata H0"></svg>
+     <div class="legend"><span><i style="background:#f5c86a"></i>t z 5000 badań w świecie H<sub>0</sub></span><span><i class="ln"></i><span id="hwCurve">krzywa t(58)</span></span></div>
+     <div class="ctrl" style="font-size:.8em;margin-top:6px"><div class="lbl">Nasze t z próby <output id="hwTO">2,27</output></div><input type="range" id="hwT" min="0" max="5" step="0.01" value="2.27" aria-label="Nasza statystyka t"></div>
+     <p class="hint" id="hwTxt"></p></div>
+   </div>
   </div>
-  <div class="cards3">
-   <div class="box s-yellow" style="font-size:.85em"><b>Nie tylko kształt.</b> Wzór zakłada też <b>równe wariancje</b> (test Levene'a) i <b>niezależne obserwacje</b> (plan badania).</div>
-   <div class="box s-blue" style="font-size:.85em"><b>Duże, równe grupy.</b> Krok 3 nie musi być spełniony idealnie: dzięki CTG statystyka i tak zachowuje się prawie jak krzywa.</div>
-  </div>
-  <p class="box s-red" style="font-size:.95em;max-width:none">Sprawdzamy na próbie, czy populacja wygląda tak, jak zakłada wzór na rozkład zerowy. Jeśli tak, możemy z tego wzoru liczyć p.</p>
  </div>
 </section>
 
@@ -848,6 +857,36 @@ onEnter(slideNo('#p12'),()=>{const r=RNG(12);const T=[];let out=0;const cr=tCrit
     vlines:[{x:cr,color:'#666',dash:'10 8',w:3,label:'granica',fs:18},{x:-cr,color:'#666',dash:'10 8',w:3}]});
   byId('p12t').innerHTML=`Przykład: grupy liczą 10 i 40 osób, a wariancja mniejszej grupy jest 9 razy większa. Według wzorca poza granicami istotności powinno być <b>5%</b> wyników. Naprawdę jest ich <b class="red">${pl(100*out/20000,1)}%</b>.`});
 
+/* ---------- świat H0: przesunięcie populacji ---------- */
+(function(){if(!byId('hwS'))return;const s=byId('hwS');let shape='normal',spread='eq';
+  const SP={eq:{lab:'równy rozrzut, 30 + 30',sK:2,sM:2,nK:30,nM:30},big:{lab:'kobiety 3× większe SD, 30 + 30',sK:6,sM:2,nK:30,nM:30},bad:{lab:'kobiety 3× większe SD, 10 + 40',sK:6,sM:2,nK:10,nM:40}};
+  const K=2,lgK=lgamma(K);const z=x=>shape==='normal'?nPdf(x):(()=>{const g=K+Math.sqrt(K)*x;return g<=0?0:Math.sqrt(K)*Math.exp((K-1)*Math.log(g)-g-lgK)})();
+  const zDraw=r=>shape==='normal'?r.n():(r.gam(K)-K)/Math.sqrt(K);
+  let cache={};
+  function nullDist(){const key=shape+spread;if(cache[key])return cache[key];const c=SP[spread],r=RNG(4242);const T=[];let out=0;const df=c.nK+c.nM-2,cr=tCrit(df,.05);
+    for(let i=0;i<5000;i++){const a=[],b=[];for(let j=0;j<c.nK;j++)a.push(11.75+c.sK*zDraw(r));for(let j=0;j<c.nM;j++)b.push(11.75+c.sM*zDraw(r));const t=tStudent(a,b).t;T.push(t);if(Math.abs(t)>cr)out++}
+    return cache[key]={T,out:out/5000,df,cr}}
+  function draw(){const t=+s.value,c=SP[spread];byId('hwO').textContent=Math.round(t*100)+'%';
+    const mK=12.5-0.75*t,mM=11+0.75*t;const fK=x=>z((x-mK)/c.sK)/c.sK,fM=x=>z((x-mM)/c.sM)/c.sM;
+    let ym=0;for(let x=0;x<=25;x+=0.1)ym=Math.max(ym,fK(x),fM(x));
+    plot(byId('hwPop'),{xmin:0,xmax:25,ymax:ym*1.3,xticks:tickRange(0,25,5),xlab:'samoocena',left:20,right:12,
+      shade:[{a:0,b:25,f:fM,color:'#9cc7ef',op:.75},{a:0,b:25,f:fK,color:'#ffb3ad',op:.6}],curves:[{f:fM,color:'#1f78c8',w:3},{f:fK,color:'#e3201b',w:3}],
+      vlines:[{x:mK,color:'#e3201b',w:3,dash:'8 6'},{x:mM,color:'#1f78c8',w:3,dash:'8 6'}],
+      texts:t>=0.999?[{x:28,y:34,s:'świat H₀:',fs:20,color:'#22a447'},{x:28,y:58,s:'M = 11,75',fs:20,color:'#22a447'},{x:28,y:82,s:'w obu grupach',fs:20,color:'#22a447'}]:[{x:28,y:34,s:t<=0.001?'prawdziwy świat':'przesuwamy…',fs:20}]});
+    const svg=byId('hwNull');
+    if(t<0.999){plot(svg,{xmin:-5,xmax:5,ymax:.45,xticks:tickRange(-4,4,2),xlab:'wartość statystyki t',left:20,right:12,curves:[{f:x=>tPdf(x,c.nK+c.nM-2),color:'#bbb',w:3,dash:'8 8'}],
+        texts:[{x:260,y:150,anchor:'middle',s:'Przesuń suwak do 100%,',fs:20,color:'#5d5a63'},{x:260,y:178,anchor:'middle',s:'żeby zbudować rozkład zerowy',fs:20,color:'#5d5a63'}]});
+      byId('hwTxt').textContent='';byId('hwCurve').textContent='krzywa t('+(c.nK+c.nM-2)+')';return}
+    const N=nullDist(),f=x=>tPdf(x,N.df),T0=+byId('hwT').value;
+    plot(svg,{xmin:-5,xmax:5,ymax:.45,hist:histo(N.T,-5,5,0.25),hiBin:x=>Math.abs(x)>=T0,xticks:tickRange(-4,4,2),xlab:'wartość statystyki t',left:20,right:12,curves:[{f}],
+      vlines:[{x:Math.min(T0,4.95),color:'#e3201b',w:4,label:'nasze t = '+pl(T0,2),anchor:T0>2.5?'end':'start',fs:18},{x:-Math.min(T0,4.95),color:'#e3201b',w:2,dash:'4 4'}]});
+    byId('hwCurve').textContent='krzywa t('+N.df+')';
+    const pe=N.T.filter(v=>Math.abs(v)>=T0).length/N.T.length,pt=tP2(T0,N.df);const fit=(pe<0.05?'<b style="color:#e3201b">Nie pasuje do świata H₀</b> – tak skrajne t jest w nim rzadkie (p < 0,05), więc odrzucamy H₀.':'<b style="color:#22a447">Pasuje do świata H₀</b> – takie t nie jest w nim rzadkie (p ≥ 0,05), więc nie odrzucamy H₀.')+((pt<0.05)!==(pe<0.05)?' <b style="color:#e3201b">Licząc p z krzywej, podjęlibyśmy odwrotną decyzję!</b>':'');
+    const lv=Math.abs(pe-pt)<=0.01+0.2*pt?0:2;
+    byId('hwTxt').innerHTML=`W świecie H₀ t co najmniej tak skrajne wychodzi w <b>${pl(100*pe,1)}%</b> badań (prawdziwe p ≈ ${pl(pe,3)}). Krzywa t(${N.df}) podaje p = ${pl(pt,3)}`+(lv?' – <b style="color:#e3201b">krzywa się myli!</b>':' – zgodnie.')+'<br>'+fit}
+  chips(byId('hwShape'),[['normal','normalny'],['skew','skośny']],shape,k=>{shape=k;draw()});
+  chips(byId('hwSpread'),Object.keys(SP).map(k=>[k,SP[k].lab]),spread,k=>{spread=k;draw()});
+  s.addEventListener('input',draw);byId('hwT').addEventListener('input',e=>{byId('hwTO').textContent=pl(+e.target.value,2);draw()});if(STATIC){s.value=1}onEnter(slideNo('#hwS'),draw)})();
 if(STATIC)slides.forEach((s,i)=>fireEnter(i));
 go(fromHash(),true);
 })();
